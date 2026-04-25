@@ -24,6 +24,8 @@ import ticketRoutes from "./routes/ticketRoutes.js";
 import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
 dotenv.config();
 
+//Tests
+
 const app = express();
 app.set("trust proxy", 1);
 
