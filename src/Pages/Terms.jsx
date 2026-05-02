@@ -1,11 +1,17 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { FaArrowLeft, FaPrint } from "react-icons/fa";
+import useSEO from "../hooks/useSEO";
 
 const Terms = () => {
   const handlePrint = () => {
     window.print();
   };
+
+  useSEO({
+    title: "Terms of Use",
+    description: "Terms of Use for MotionWorks",
+  });
 
   return (
     <div className="min-h-screen bg-[#050505] text-[#EAE4D5] selection:bg-[#B6B09F] selection:text-[#050505]">

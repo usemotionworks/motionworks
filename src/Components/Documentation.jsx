@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { client } from "../lib/sanity";
 import { Link } from "react-router-dom";
 import { FaSearch, FaBookOpen } from "react-icons/fa";
+import useSEO from "../hooks/useSEO";
 
 const CATEGORIES = [
   { title: "Getting Started With Motion Works", value: "started" },
@@ -16,6 +17,11 @@ const Documentation = () => {
   const [articles, setArticles] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
+
+  useSEO({
+    title: "Documentation",
+    description: "Documentation for MotionWorks",
+  });
 
   useEffect(() => {
     const query = `*[_type == "article"]{ title, slug, category }`;

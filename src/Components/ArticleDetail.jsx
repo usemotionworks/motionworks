@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { client } from "../lib/sanity";
 import { PortableText } from "@portabletext/react";
 import { FaChevronLeft } from "react-icons/fa";
+import useSEO from "../hooks/useSEO";
 
 const ArticleDetail = () => {
   const { slug } = useParams();
@@ -24,6 +25,11 @@ const ArticleDetail = () => {
         setLoading(false);
       });
   }, [slug]);
+
+  useSEO({
+    title: article?.title,
+    description: article?.description,
+  });
 
   // Customizing how the text looks (match your dashboard vibe)
   const components = {

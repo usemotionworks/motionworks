@@ -1,5 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
+import useSEO from "../hooks/useSEO";
 
 const PrivacyPolicy = () => {
   const sectionStyle = "mb-10";
@@ -10,6 +11,11 @@ const PrivacyPolicy = () => {
   const pStyle = "text-[#B6B09F] text-sm leading-relaxed mb-4 opacity-80";
   const listStyle =
     "list-disc ml-6 text-[#B6B09F] text-sm space-y-2 mb-6 opacity-80";
+
+  useSEO({
+    title: "Privacy Policy",
+    description: "Privacy Policy for MotionWorks",
+  });
 
   return (
     <motion.div
