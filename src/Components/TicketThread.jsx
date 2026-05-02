@@ -182,7 +182,12 @@ const TicketThread = ({ isAdminView = false }) => {
         </div>
 
         {ticket.messages.map((msg, index) => {
-          const isMe = msg.sender === user._id;
+          // 1. Check if msg.sender is an object (populated) or just an ID string
+          const senderId = msg.sender?._id || msg.sender;
+
+          // 2. Convert both to strings before comparing to avoid Object vs String mismatch
+          const isMe = senderId?.toString() === user?._id?.toString();
+
           return (
             <div
               key={index}
@@ -196,15 +201,7 @@ const TicketThread = ({ isAdminView = false }) => {
                 }`}
               >
                 <p>{msg.message}</p>
-                {renderAttachments(msg.attachments)}
-                <span
-                  className={`text-[9px] mt-2 block ${isMe ? "text-black/40" : "text-[#B6B09F]/40"}`}
-                >
-                  {new Date(msg.createdAt).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
+                {/* ... rest of your code */}
               </div>
             </div>
           );

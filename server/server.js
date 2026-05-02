@@ -32,7 +32,8 @@ app.set("trust proxy", 1);
 const allowedOrigins = [
   "https://usemotionworks.com",
   "https://www.usemotionworks.com",
-  "http://localhost:5173", // for local dev
+  "http://localhost:5173",
+  "http://localhost:5174", // for local dev
 ];
 
 app.use(

@@ -7,6 +7,7 @@ import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { s3Client } from "../utils/uploadFileToS3.js";
 import crypto from "crypto";
 import AuditLog from "../models/AuditLog.js";
+import { notifyAdminNewTicket } from "../utils/slack.js";
 
 export const createTicket = async (req, res) => {
   try {
@@ -16,6 +17,7 @@ export const createTicket = async (req, res) => {
       user: req.user._id,
       subject,
       description,
+      category,
       attachments, // URLs already uploaded to S3
     });
 
@@ -24,6 +26,10 @@ export const createTicket = async (req, res) => {
       req.user.email,
       ticket._id,
       subject,
+    );
+
+    notifyAdminNewTicket(
+      `New Ticket: ${req.user.email}, Subject: ${subject}, Category: ${category}, Description: ${description}`,
     );
 
     res.status(201).json(ticket);
