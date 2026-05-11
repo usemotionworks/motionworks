@@ -23,6 +23,7 @@ export default {
           {title: 'Getting Started With Motion Works', value: 'started'},
           {title: 'Uploading and Editing Your Music', value: 'uploading'},
           {title: 'Your Music in Stores and Services', value: 'releases'},
+          {title: 'Collaborations', value: 'collaboration'},
           {title: 'Analytics and Reporting', value: 'analytics'},
           {title: 'Wallet, Payouts & Royalties', value: 'wallet'},
           {title: 'Account Settings', value: 'account'},
