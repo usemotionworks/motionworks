@@ -105,7 +105,7 @@ export const sendReleaseRejectionEmail = async (
 
     <div style="background-color: rgba(182, 176, 159, 0.05); border-left: 4px solid #EAE4D5; padding: 20px; margin-bottom: 25px;">
       <p style="margin: 0; font-size: 14px; color: black; font-weight: bold;">Reason for rejection:</p>
-      <p style="margin: 10px 0 0 0; font-size: 15px; color: #000000; line-height: 1.5;">${reason}</p>
+      <p style="margin: 10px 0 0 0; font-size: 15px; color: #EAE4D5; line-height: 1.5;">${reason}</p>
     </div>
 
     <p style="font-size: 14px; line-height: 1.6; margin-bottom: 25px;">Please log in to your dashboard to edit your release and resubmit for review.</p>
@@ -170,3 +170,29 @@ export const sendTicketReplyEmail = async (email, name, ticketId) => {
     html,
   });
 };
+
+// // 1. Create the AWS SES Transporter
+// const transporter = nodemailer.createTransport({
+//   host: "email-smtp.eu-north-1.amazonaws.com", // Check your AWS region
+//   port: 587,
+//   secure: false, // true for 465, false for other ports
+//   auth: {
+//     user: process.env.AWS_SES_USER, // Your SMTP Username
+//     pass: process.env.AWS_SES_PASS, // Your SMTP Password
+//   },
+// });
+
+// // 📩 Updated sendVerificationEmail
+// export const sendVerificationEmail = async (email, name, token) => {
+//   const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
+
+//   const html = emailWrapper(`...your same HTML content...`);
+
+//   // 2. Change .send() to transporter.sendMail()
+//   return await transporter.sendMail({
+//     from: '"Motion Works" <info@usemotionworks.com>',
+//     to: email,
+//     subject: "Verify your account | Motion Works",
+//     html,
+//   });
+// };
