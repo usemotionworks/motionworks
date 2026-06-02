@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { FaMusic, FaPlus, FaGlobe } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
+import { FaMusic, FaPlus, FaGlobe, FaChartLine } from "react-icons/fa";
+import { useNavigate, Link } from "react-router-dom";
 import axios from "../../lib/axios";
 
 const ReleasesPage = () => {
@@ -76,82 +76,118 @@ const ReleasesPage = () => {
         ) : (
           /* Populated State: The Release List */
           <div className="divide-y divide-[#B6B09F]/10">
-            {releases.map((release) => (
-              <div
-                key={release._id}
-                className="p-6 flex items-center gap-4 hover:bg-white/[0.02] transition-colors"
-              >
-                {/* Artwork Thumbnail */}
-                <div className="w-16 h-16 bg-[#B6B09F]/20 rounded-md overflow-hidden flex-shrink-0">
-                  {release.artwork /* 👈 Changed from release.artworkUrl */ ? (
-                    <img
-                      src={
-                        release.artwork
-                      } /* 👈 Changed from release.artworkUrl */
-                      alt={
-                        release.title
-                      } /* 👈 Changed from release.releaseTitle */
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-[#B6B09F]">
-                      <FaMusic />
+            {releases.map((release) => {
+              const hasSmartlink =
+                release.smartlink ||
+                release.smartlinkId ||
+                release.hasSmartlink;
+
+              const canCreateSmartlink =
+                release.status === "distributed" && !hasSmartlink;
+
+              const canViewAnalytics = hasSmartlink;
+
+              return (
+                <div
+                  key={release._id}
+                  className="p-6 flex items-center gap-4 hover:bg-white/[0.02] transition-colors"
+                >
+                  {/* Artwork Thumbnail */}
+                  <div className="w-16 h-16 bg-[#B6B09F]/20 rounded-md overflow-hidden flex-shrink-0">
+                    {release.artwork /* 👈 Changed from release.artworkUrl */ ? (
+                      <img
+                        src={
+                          release.artwork
+                        } /* 👈 Changed from release.artworkUrl */
+                        alt={
+                          release.title
+                        } /* 👈 Changed from release.releaseTitle */
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-[#B6B09F]">
+                        <FaMusic />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Create Smartlink */}
+
+                  {/* Release Info */}
+                  <div className="flex-grow">
+                    {/* View Analytics */}
+                    {canCreateSmartlink && (
+                      <Link
+                        to={`/smartlink/create-smartlink`}
+                        className="px-4 py-2 text-xs font-bold bg-[#EAE4D5] text-[#050505] rounded-lg hover:opacity-90 transition-all inline-flex items-center gap-2"
+                      >
+                        <FaPlus className="text-[10px]" />
+                        Create Smartlink
+                      </Link>
+                    )}
+                    {canViewAnalytics && (
+                      <Link
+                        to={`/smartlink/analytics`}
+                        className="px-4 py-2 text-xs font-bold border border-emerald-500/20 text-emerald-400 rounded-lg hover:bg-emerald-500/10 transition-all inline-flex items-center gap-2"
+                      >
+                        <FaChartLine className="text-[10px]" />
+                        View Your Smartlink Analytics
+                      </Link>
+                    )}
+                    <h4 className="text-[#EAE4D5] font-bold text-lg">
+                      {release.title}{" "}
+                      {/* 👈 Changed from release.releaseTitle */}
+                    </h4>
+                    <p className="text-[#B6B09F] text-sm">
+                      {release.releaseType}{" "}
+                      {/* 👈 Show the type since artist is just an ID for now */}
+                    </p>
+                  </div>
+
+                  {/* Status & Date */}
+                  <div className="text-right">
+                    {/* 👈 Dynamically pulling the actual status and styling based on it */}
+                    <span
+                      className={`inline-block px-3 py-1 rounded-full text-xs font-medium mb-1 ${
+                        release.status === "pending"
+                          ? "bg-yellow-500/10 text-yellow-500"
+                          : "bg-[#B6B09F]/10 text-[#B6B09F]"
+                      }`}
+                    >
+                      {release.status.charAt(0).toUpperCase() +
+                        release.status.slice(1)}
+                    </span>
+                    <p className="text-[#B6B09F] text-xs">
+                      {new Date(release.releaseDate).toLocaleDateString()}
+                    </p>
+                  </div>
+                  {(release.status === "draft" ||
+                    release.status === "rejected") && (
+                    <button
+                      onClick={() =>
+                        navigate(`/dashboard/releases/edit/${release._id}`)
+                      }
+                      className="px-4 py-2 text-xs font-bold border border-[#B6B09F]/20 text-[#EAE4D5] rounded hover:bg-[#B6B09F]/10 transition-all"
+                    >
+                      {release.status === "draft"
+                        ? "Continue"
+                        : "Fix & Resubmit"}
+                    </button>
+                  )}
+
+                  {release.status === "rejected" && release.rejectionReason && (
+                    <div className="mt-2 p-3 bg-red-500/5 border border-red-500/20 rounded-lg">
+                      <p className="text-xs text-red-400 font-semibold uppercase tracking-wider mb-1">
+                        Issue Found:
+                      </p>
+                      <p className="text-sm text-[#B6B09F] italic">
+                        "{release.rejectionReason}"
+                      </p>
                     </div>
                   )}
                 </div>
-
-                {/* Release Info */}
-                <div className="flex-grow">
-                  <h4 className="text-[#EAE4D5] font-bold text-lg">
-                    {release.title} {/* 👈 Changed from release.releaseTitle */}
-                  </h4>
-                  <p className="text-[#B6B09F] text-sm">
-                    {release.releaseType}{" "}
-                    {/* 👈 Show the type since artist is just an ID for now */}
-                  </p>
-                </div>
-
-                {/* Status & Date */}
-                <div className="text-right">
-                  {/* 👈 Dynamically pulling the actual status and styling based on it */}
-                  <span
-                    className={`inline-block px-3 py-1 rounded-full text-xs font-medium mb-1 ${
-                      release.status === "pending"
-                        ? "bg-yellow-500/10 text-yellow-500"
-                        : "bg-[#B6B09F]/10 text-[#B6B09F]"
-                    }`}
-                  >
-                    {release.status.charAt(0).toUpperCase() +
-                      release.status.slice(1)}
-                  </span>
-                  <p className="text-[#B6B09F] text-xs">
-                    {new Date(release.releaseDate).toLocaleDateString()}
-                  </p>
-                </div>
-                {(release.status === "draft" ||
-                  release.status === "rejected") && (
-                  <button
-                    onClick={() =>
-                      navigate(`/dashboard/releases/edit/${release._id}`)
-                    }
-                    className="px-4 py-2 text-xs font-bold border border-[#B6B09F]/20 text-[#EAE4D5] rounded hover:bg-[#B6B09F]/10 transition-all"
-                  >
-                    {release.status === "draft" ? "Continue" : "Fix & Resubmit"}
-                  </button>
-                )}
-
-                {release.status === "rejected" && release.rejectionReason && (
-                  <div className="mt-2 p-3 bg-red-500/5 border border-red-500/20 rounded-lg">
-                    <p className="text-xs text-red-400 font-semibold uppercase tracking-wider mb-1">
-                      Issue Found:
-                    </p>
-                    <p className="text-sm text-[#B6B09F] italic">
-                      "{release.rejectionReason}"
-                    </p>
-                  </div>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

@@ -9,6 +9,9 @@ import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
 
+//Utils
+import { authenticateSpotify } from "./utils/spotify.js";
+
 //Routes
 import authRoutes from "./routes/authRoutes.js";
 import royaltyRoutes from "./routes/royaltyRoutes.js";
@@ -19,6 +22,7 @@ import scoutRoutes from "./routes/scoutRoutes.js";
 import releaseRoutes from "./routes/releaseRoutes.js";
 import collaborationsRoutes from "./routes/collaborations.js";
 import ticketRoutes from "./routes/ticketRoutes.js";
+import lookupRoutes from "./routes/lookupRoutes.js";
 
 //Error Middleware
 import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
@@ -78,19 +82,25 @@ cron.schedule("0 0 * * *", async () => {
   console.log("Cleanup: Closed tickets resolved over 10 days ago.");
 });
 
+// Spotify token bootstrap
+authenticateSpotify();
+
+// Refresh every 50 mins
+setInterval(authenticateSpotify, 1000 * 60 * 50);
+
 app.use("/api/", limiter);
 
 // --- Database Connection ---
 mongoose
   .connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ Connected to Horme OS Database"))
+  .then(() => console.log("✅ Connected to Motion Works OS Database"))
   .catch((err) => console.error("❌ MongoDB Connection Error:", err));
 
 // --- Basic Route ---
 app.get("/health", (req, res) => {
   res
     .status(200)
-    .json({ status: "active", message: "Horme OS Engine Running" });
+    .json({ status: "active", message: "Motion Works OS Engine Running" });
 });
 
 app.use("/api/auth", authRoutes);
@@ -102,6 +112,7 @@ app.use("/api/scouts", scoutRoutes);
 app.use("/api/releases", releaseRoutes);
 app.use("/api/collaborations", collaborationsRoutes);
 app.use("/api/tickets", ticketRoutes);
+app.use("/api/lookup", lookupRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

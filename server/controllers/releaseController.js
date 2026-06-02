@@ -429,20 +429,30 @@ export const uploadArtwork = async (req, res) => {
 // @access  Private (Artist)
 export const getReleaseById = async (req, res) => {
   try {
-    const release = await Release.findOne({
-      _id: req.params.id,
-      releaseOwner: req.user._id,
-    });
+    // Admins can access any release
+    // Regular users can only access their own
+    const query =
+      req.user.role === "admin"
+        ? { _id: req.params.id }
+        : {
+            _id: req.params.id,
+            releaseOwner: req.user._id,
+          };
+
+    const release = await Release.findOne(query);
 
     if (!release) {
-      return res.status(404).json({ message: "Release not found." });
+      return res.status(404).json({
+        message: "Release not found.",
+      });
     }
 
     res.status(200).json(release);
   } catch (error) {
     console.error("Error fetching release:", error);
-    res
-      .status(500)
-      .json({ message: "Server error while fetching release details." });
+
+    res.status(500).json({
+      message: "Server error while fetching release details.",
+    });
   }
 };

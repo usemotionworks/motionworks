@@ -17,6 +17,9 @@ import Terms from "./Pages/Terms";
 import PrivacyPolicy from "./Pages/PrivacyPolicy";
 import CookieConsent from "./Components/CookieConsent";
 import CookiePolicy from "./Pages/CookiePolicy";
+import IsrcAnalyticsDashboard from "./Components/IsrcAnalyticsDashboard";
+import CreateSmartlink from "./Components/CreateSmartlink";
+import SmartlinkPage from "./Pages/SmartLinkPage";
 
 // Layouts
 import Layout from "./Layout/Layout";
@@ -58,6 +61,8 @@ import ReleaseApprovalQueue from "./Components/AdminComponents/ReleaseApprovalQu
 import WithdrawalManager from "./Components/AdminComponents/WithdrawalManager";
 import ActivityLog from "./Components/AdminComponents/ActivityLog";
 import AdminTickets from "./Components/AdminComponents/AdminTickets";
+import SmartlinkDashboard from "./Components/AdminComponents/SmartlinkDashboard";
+import AdminCreateSmartlink from "./Components/AdminComponents/AdminCreateSmartlink";
 
 //Auth Pages
 import { useUserStore } from "./store/useUserStore";
@@ -103,6 +108,8 @@ const AppContent = () => {
         <Layout>
           <Routes>
             <Route path="/" element={<Homepage />} />
+
+            <Route path="/share/:slug" element={<SmartlinkPage />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
             <Route
@@ -133,11 +140,34 @@ const AppContent = () => {
               <Route path="withdrawals" element={<WithdrawalManager />} />
               <Route path="logs" element={<ActivityLog />} />
               <Route path="tickets" element={<AdminTickets />} />
+              <Route path="smartlink" element={<SmartlinkDashboard />} />
+              <Route
+                path="smartlink/create/:releaseId"
+                element={<AdminCreateSmartlink />}
+              />
               <Route
                 path="tickets/:id"
                 element={<TicketThread isAdminView={true} />}
               />
             </Route>
+
+            <Route
+              path="smartlink/create-smartlink"
+              element={
+                <ProtectedRoute>
+                  <CreateSmartlink />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="smartlink/analytics"
+              element={
+                <ProtectedRoute>
+                  <IsrcAnalyticsDashboard />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Artist Portal Routes - Protected */}
             <Route

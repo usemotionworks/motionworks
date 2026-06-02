@@ -294,3 +294,18 @@ export const getAuditLogs = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch logs" });
   }
 };
+
+export const getDistributedReleases = async (req, res) => {
+  try {
+    // 1. Fetch releases (use .lean() so we can modify the objects easily)
+    const releases = await Release.find({ status: "distributed" })
+      .populate("releaseOwner", "stageName email")
+      .sort({ createdAt: 1 })
+      .lean();
+
+    res.status(200).json(releases);
+  } catch (error) {
+    console.error("ERROR IN GET DISTRIBUTED RELEASES:", error);
+    res.status(500).json({ message: "Error fetching distributed releases" });
+  }
+};

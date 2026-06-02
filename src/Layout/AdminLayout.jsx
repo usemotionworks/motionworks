@@ -17,6 +17,7 @@ const AdminLayout = () => {
     { name: "Withdrawals", path: "/admin/withdrawals" },
     { name: "Activity Logs", path: "/admin/logs" },
     { name: "Support Tickets", path: "/admin/tickets" },
+    { name: "Smartlink Queue", path: "/admin/smartlink" },
   ];
 
   const handleLogout = () => {

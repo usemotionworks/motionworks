@@ -158,6 +158,12 @@ const releaseSchema = new mongoose.Schema(
       agreedAt: Date,
       version: { type: String, default: "1.0.0" }, // In case you change terms later
     },
+    smartlink: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Smartlink",
+      default: null,
+    },
+    isrc: { type: String, trim: true },
   },
   { timestamps: true },
 );
