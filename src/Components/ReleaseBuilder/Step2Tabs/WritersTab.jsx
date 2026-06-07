@@ -1,7 +1,7 @@
 import React from "react";
 import { FaPlus, FaTrash, FaCopy } from "react-icons/fa";
 
-const WRITER_ROLES = ["Composer", "Lyricist", "Arranger", "Producer"];
+const WRITER_ROLES = ["Composer", "Lyricist", "Arranger", "Producer", "Writer"];
 
 const WritersTab = ({ track, onUpdate, onApplyToAll }) => {
   const writers = track.writers || [];
