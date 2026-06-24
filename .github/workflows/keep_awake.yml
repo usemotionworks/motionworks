@@ -16,9 +16,9 @@ jobs:
       - name: Ping Render Instances
         run: |
           # Iteration 1
-          curl -sL https://api.usemotionworks.com/ || echo "Ping failed for instance 1"
+          curl -sL https://api.usemotionworks.com/health || echo "Ping failed for instance 1"
           
           # Iteration 2 (Optional - remove if pushing past 750 total hours)
-          # curl -sL https://api.usemotionworks.com/ || echo "Ping failed for instance 2"
+          # curl -sL https://api.usemotionworks.com/health || echo "Ping failed for instance 2"
 
 
