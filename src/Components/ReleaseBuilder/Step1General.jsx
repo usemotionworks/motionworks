@@ -138,6 +138,7 @@ const Step1General = ({
                   <ul className="list-disc ml-4 mt-1 space-y-1">
                     <li>Minimum 3000 x 3000 pixels (Perfect Square).</li>
                     <li>Formats: JPG or PNG only.</li>
+                    <li>Less than 10MB</li>
                     <li>No blurry images or social media handles.</li>
                   </ul>
                 </div>
@@ -185,7 +186,6 @@ const Step1General = ({
               onChange={handleChange}
               className={inputStyle}
             >
-              <option value="Local Time">Listener's Local Midnight</option>
               <option value="EST">EST (Global Simultaneous)</option>
               <option value="GMT">GMT (Global Simultaneous)</option>
             </select>

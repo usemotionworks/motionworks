@@ -420,7 +420,11 @@ export const uploadArtwork = async (req, res) => {
 
     res.status(200).json({ imageUrl });
   } catch (error) {
-    res.status(500).json({ message: "Failed to upload artwork." });
+    res
+      .status(500)
+      .json({
+        message: "Failed to upload artwork. Make sure it's a valid image file.",
+      });
   }
 };
 
