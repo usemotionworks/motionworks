@@ -154,8 +154,35 @@ router.post("/create", protect, async (req, res) => {
       smartlinkId: newSmartlink._id,
     });
   } catch (error) {
+    // 1. Log the ugly, technical error to your backend console so YOU can debug it
+    console.error("Smartlink creation error:", error);
+
+    // 2. Catch MongoDB duplicate key errors (Error Code 11000)
+    if (error.code === 11000 && error.keyValue) {
+      // Find out which field caused the duplicate error (e.g., 'upc', 'slug')
+      const duplicateField = Object.keys(error.keyValue)[0];
+
+      // Make the field name look nice (e.g., 'upc' -> 'Upc')
+      const formattedField =
+        duplicateField.charAt(0).toUpperCase() + duplicateField.slice(1);
+
+      return res.status(400).json({
+        error: `This ${formattedField} is already in use. Please try a different one.`,
+      });
+    }
+
+    // 3. Catch validation errors from Mongoose
+    if (error.name === "ValidationError") {
+      return res.status(400).json({
+        error:
+          "Some of the provided information is invalid. Please check your inputs.",
+      });
+    }
+
+    // 4. Default friendly error for anything else unexpected (Server crashes, etc.)
     return res.status(500).json({
-      error: "Failed to create smartlink",
+      error:
+        "Oops! Something went wrong while setting up your smartlink. Please try again later.",
     });
   }
 });

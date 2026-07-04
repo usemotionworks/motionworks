@@ -37,8 +37,12 @@ const Step3Review = ({
         {/* RELEASE SUMMARY CARD */}
         <div className="p-6 bg-[#050505] border border-[#B6B09F]/10 rounded-xl">
           <h2 className="text-xl font-semibold text-[#EAE4D5] border-b border-[#B6B09F]/10 pb-2 mb-4 uppercase tracking-tighter">
-            Final Review
+            Final Review{" "}
+            <span className="text-[#B6B09F]/40 text-xs">
+              Remember to add Composer, Lyrics, and Production Credits
+            </span>
           </h2>
+
           <div className="flex flex-col md:flex-row gap-6">
             <div className="w-32 h-32 bg-[#0a0a0a] rounded-lg overflow-hidden border border-[#B6B09F]/10 flex-shrink-0">
               {releaseData.artwork ? (

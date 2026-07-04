@@ -30,7 +30,6 @@ const ActivityLog = () => {
     fetchLogs();
   }, []);
 
-  console.log(logs);
   const filteredLogs = logs.filter(
     (log) =>
       log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||

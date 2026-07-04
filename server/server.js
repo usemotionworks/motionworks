@@ -11,6 +11,7 @@ import rateLimit from "express-rate-limit";
 
 //Utils
 import { authenticateSpotify } from "./utils/spotify.js";
+import { Smartlink } from "./models/smartlink.js";
 
 //Routes
 import authRoutes from "./routes/authRoutes.js";
@@ -91,11 +92,18 @@ setInterval(authenticateSpotify, 1000 * 60 * 50);
 app.use("/api/", limiter);
 
 // --- Database Connection ---
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ Connected to Motion Works OS Database"))
-  .catch((err) => console.error("❌ MongoDB Connection Error:", err));
-
+// Your existing connection code...
+mongoose.connect(process.env.MONGO_URI).then(async () => {
+  console.log("MongoDB connected");
+  // --- ADD THIS TEMPORARY FIX ---
+  try {
+    await Smartlink.collection.dropIndex("shortId_1");
+    console.log("✅ Successfully dropped the old broken UPC index!");
+  } catch (error) {
+    console.log("ℹ️ Index drop info:", error.message);
+  }
+  // ------------------------------
+});
 // --- Basic Route ---
 app.get("/health", (req, res) => {
   res

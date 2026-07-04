@@ -17,7 +17,11 @@ const smartlinkSchema = new mongoose.Schema(
     },
     slug: { type: String, required: true, unique: true }, // e.g., "stay-cruising"
     isrc: { type: String },
-    upc: { type: String },
+    upc: {
+      type: String,
+      unique: true,
+      sparse: true, // <-- Add this! This tells MongoDB to ignore unique validation if the value is missing/null
+    },
     title: String,
     artistName: String,
     coverArt: String,

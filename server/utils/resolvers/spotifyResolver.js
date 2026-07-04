@@ -29,7 +29,6 @@ export async function resolveSpotifyEntity(url, spotifyApi) {
     const response = await spotifyApi.getAlbum(albumId);
     const album = response.body;
 
-    console.log(album);
     return {
       type: "album",
       spotifyId: album.id,
