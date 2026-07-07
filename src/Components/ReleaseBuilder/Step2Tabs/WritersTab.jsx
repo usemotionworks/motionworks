@@ -1,7 +1,7 @@
 import React from "react";
 import { FaPlus, FaTrash, FaCopy } from "react-icons/fa";
 
-const WRITER_ROLES = ["Composer", "Lyricist", "Arranger", "Producer", "Writer"];
+const WRITER_ROLES = ["Composer", "Lyricist", "Arranger", "Writer"];
 
 const WritersTab = ({ track, onUpdate, onApplyToAll }) => {
   const writers = track.writers || [];
@@ -42,7 +42,8 @@ const WritersTab = ({ track, onUpdate, onApplyToAll }) => {
             Writers & Publishers
           </p>
           <p className="text-[9px] text-[#B6B09F]/40 italic">
-            Use legal names only for royalty collection.
+            Use legal names only for royalty collection. (Specify a Lyricist AND
+            Composer)
           </p>
         </div>
         <button

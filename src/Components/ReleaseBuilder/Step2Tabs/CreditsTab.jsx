@@ -65,7 +65,8 @@ const CreditsTab = ({ track, onUpdate, onApplyToAll }) => {
     <div className="space-y-6">
       <div className="flex justify-between items-center border-b border-[#B6B09F]/10 pb-4">
         <p className="text-[10px] text-[#B6B09F]/50 uppercase tracking-widest">
-          Studio & Engineering Credits
+          Studio & Engineering Credits{" "}
+          <span className="text-sm lowercase">(Producer required)</span>
         </p>
         <button
           onClick={() => onApplyToAll("additionalCredits")}
