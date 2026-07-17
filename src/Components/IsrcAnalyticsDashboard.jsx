@@ -76,27 +76,40 @@ export default function IsrcAnalyticsDashboard() {
       setError(null);
       setReportData(null);
 
-      const isrc = release?.isrc;
-      const upc = release?.upc;
+      const { upc, isrc } = release || {};
 
+      let lastError = null;
+
+      // Try UPC first
       if (upc) {
-        const response = await axios.get(`/api/lookup/by-upc/${upc}`);
-        setReportData(response.data);
-        return;
+        try {
+          const response = await axios.get(`/api/lookup/by-upc/${upc}`);
+          setReportData(response.data);
+          return;
+        } catch (err) {
+          console.warn("UPC lookup failed:", err);
+          lastError = err;
+        }
       }
 
+      // Fall back to ISRC
       if (isrc) {
-        const response = await axios.get(`/api/lookup/by-isrc/${isrc}`);
-        setReportData(response.data);
-        return;
-      }
+        try {
+          const response = await axios.get(`/api/lookup/by-isrc/${isrc}`);
+          setReportData(response.data);
 
-      toast.error("No ISRC or UPC found for this release");
-    } catch (err) {
-      console.error(err);
+          console.log("ISRC lookup succeeded:", response.data);
+          return;
+        } catch (err) {
+          console.warn("ISRC lookup failed:", err);
+          lastError = err;
+        }
+      }
 
       const errorMessage =
-        err.response?.data?.error || err.message || "Failed to load analytics";
+        lastError?.response?.data?.error ||
+        lastError?.message ||
+        "No analytics found for this release";
 
       setError(errorMessage);
       toast.error(errorMessage);
@@ -104,6 +117,7 @@ export default function IsrcAnalyticsDashboard() {
       setLoadingAnalytics(false);
     }
   };
+
 
   return (
     <div className="min-h-screen bg-[#050505] text-[#B6B09F] p-6 md:p-12">
