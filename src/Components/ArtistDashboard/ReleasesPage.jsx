@@ -162,7 +162,8 @@ const ReleasesPage = () => {
                     </p>
                   </div>
                   {(release.status === "draft" ||
-                    release.status === "rejected") && (
+                    release.status === "rejected" ||
+                    release.status === "pending") && (
                     <button
                       onClick={() =>
                         navigate(`/dashboard/releases/edit/${release._id}`)
@@ -171,7 +172,7 @@ const ReleasesPage = () => {
                     >
                       {release.status === "draft"
                         ? "Continue"
-                        : "Fix & Resubmit"}
+                        : "Resubmit"}
                     </button>
                   )}
 

@@ -35,7 +35,7 @@ const Step1General = ({
 
   // Format dates to YYYY-MM-DD
   const minDate = today.toISOString().split("T")[0];
-  const maxDate = futureDate.toISOString().split("T")[0];
+  //const maxDate = futureDate.toISOString().split("T")[0];
 
   // Consistent Styling
   const inputStyle =
@@ -151,7 +151,7 @@ const Step1General = ({
       {/* 3. SCHEDULE */}
       <section className={sectionCard}>
         <h2 className="text-xl font-serif text-[#EAE4D5] border-b border-[#B6B09F]/10 pb-4">
-          Release Schedule
+          Release Schedule <span className="text-sm text-[#B6B09F]/80">(Immediate releases take min 5 days)</span>
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
@@ -159,7 +159,7 @@ const Step1General = ({
             <input
               type="date"
               min={minDate}
-              max={maxDate}
+              //max={maxDate}
               name="releaseDate"
               value={data.releaseDate}
               onChange={handleChange}
@@ -171,7 +171,7 @@ const Step1General = ({
             <input
               type="date"
               min={minDate}
-              max={maxDate}
+              //max={maxDate}
               name="preOrderDate"
               value={data.preOrderDate}
               onChange={handleChange}
