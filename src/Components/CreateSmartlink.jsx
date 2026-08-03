@@ -14,6 +14,8 @@ export default function CreateSmartlink() {
   const [selectedRelease, setSelectedRelease] = useState(null);
   const [releaseSearch, setReleaseSearch] = useState("");
   const [manualLinks, setManualLinks] = useState({
+    appleMusic: "",
+    itunes: "",
     tidal: "",
     pandora: "",
     amazonMusic: "",
@@ -174,6 +176,9 @@ export default function CreateSmartlink() {
     const soundcloudQuery = encodeURIComponent(data.artist.split(",")[0]);
 
     switch (platform) {
+      case "appleMusic":
+            case "itunes":
+              return `https://music.apple.com/us/search?term=${query}`;
       case "tidal":
         return `https://tidal.com/search?q=${query}`;
 
@@ -361,7 +366,7 @@ export default function CreateSmartlink() {
               </label>
               <div className="flex rounded-lg overflow-hidden border border-slate-700 bg-[#050505] focus-within:border-cyan-500 transition-colors">
                 <span className="bg-[#050505] text-[#B6B09F] px-3 py-2.5 text-sm font-medium select-none flex items-center border-r border-slate-700">
-                  motionworks.lnk.to/
+                  usemotionworks.com/share
                 </span>
                 <input
                   type="text"
@@ -470,50 +475,66 @@ export default function CreateSmartlink() {
                 ))}
               </div>
             </div>
-            <div className="space-y-3 mt-6">
-              <label className="block text-xs font-black uppercase tracking-[0.3em] text-[#B6B09F]">
+
+            {/* MANUAL LINKS */}
+            <div className="space-y-4">
+              <h3 className="text-xs uppercase tracking-[0.3em] text-[#B6B09F]">
                 Manual Platform Inputs
-              </label>
+              </h3>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {Object.entries(manualLinks).map(([platform, value]) => (
-                  <div
-                    key={platform}
-                    className="group bg-[#050505] border border-[#B6B09F]/10 rounded-xl p-4 flex flex-col gap-3 hover:border-[#B6B09F]/40 transition-all"
-                  >
-                    {/* Header row */}
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs uppercase tracking-[0.25em] text-[#B6B09F]">
-                        {platform}
-                      </span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {Object.entries(manualLinks)
+                  // 💡 HIDE INPUT IF AUTO-AGGREGATED LINK EXISTS
+                  .filter(([platform]) => {
+                    if (platform === "appleMusic") {
+                      return !appleLinks.appleMusic && !appleLinks.itunes;
+                    }
+                    if (platform === "itunes") {
+                      return !appleLinks.itunes && !appleLinks.appleMusic;
+                    }
+                    return !normalizedLinks[platform];
+                  })
+                  .map(([platform, value]) => (
+                    <div
+                      key={platform}
+                      className="border border-[#B6B09F]/10 rounded-xl p-4"
+                    >
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="text-xs uppercase text-[#B6B09F]">
+                          {platform === "appleMusic"
+                            ? "Apple Music"
+                            : platform === "amazonMusic"
+                            ? "Amazon Music"
+                            : platform}
+                        </span>
 
-                      <a
-                        href={getSearchUrl(platform, previewData)}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-[10px] uppercase tracking-wider text-[#EAE4D5]/60 hover:text-[#EAE4D5] transition"
-                      >
-                        Search →
-                      </a>
+                        <a
+                          href={getSearchUrl(platform, previewData)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[10px] text-[#B6B09F]/60 hover:text-white"
+                        >
+                          Search →
+                        </a>
+                      </div>
+
+                      <input
+                        value={value}
+                        onChange={(e) =>
+                          setManualLinks((prev) => ({
+                            ...prev,
+                            [platform]: e.target.value,
+                          }))
+                        }
+                        placeholder={`Paste ${
+                          platform === "appleMusic" ? "Apple Music" : platform
+                        } URL`}
+                        className="w-full bg-[#0a0a0a] border border-[#B6B09F]/20 rounded-lg px-3 py-2 text-sm"
+                      />
                     </div>
-
-                    {/* Input */}
-                    <input
-                      value={value}
-                      onChange={(e) =>
-                        setManualLinks((prev) => ({
-                          ...prev,
-                          [platform]: e.target.value,
-                        }))
-                      }
-                      className="w-full bg-[#050505] border border-[#B6B09F]/20 rounded-lg px-3 py-2 text-sm text-white font-mono focus:border-[#B6B09F]/60 focus:outline-none transition"
-                      placeholder="Paste link here"
-                    />
-                  </div>
-                ))}
+                  ))}
               </div>
             </div>
-
             {/* Commit Submit Action Button */}
             <div className="pt-2">
               <button

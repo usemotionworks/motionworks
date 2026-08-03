@@ -5,22 +5,18 @@ import { useNavigate, useParams } from "react-router-dom";
 
 export default function AdminCreateSmartlink() {
   const { releaseId } = useParams();
-
   const navigate = useNavigate();
-
   const [release, setRelease] = useState(null);
-
   const [spotifyUrl, setSpotifyUrl] = useState("");
-
   const [previewData, setPreviewData] = useState(null);
-
   const [loadingRelease, setLoadingRelease] = useState(true);
   const [loadingMetadata, setLoadingMetadata] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-
   const [slug, setSlug] = useState("");
 
   const [manualLinks, setManualLinks] = useState({
+    appleMusic: "",
+    itunes: "",
     tidal: "",
     pandora: "",
     amazonMusic: "",
@@ -152,6 +148,9 @@ export default function AdminCreateSmartlink() {
     const soundcloudQuery = encodeURIComponent(data.artist.split(",")[0]);
 
     switch (platform) {
+      case "appleMusic":
+            case "itunes":
+              return `https://music.apple.com/us/search?term=${query}`;
       case "tidal":
         return `https://tidal.com/search?q=${query}`;
 
@@ -303,68 +302,69 @@ export default function AdminCreateSmartlink() {
           </div>
 
           {/* PLATFORM LINKS */}
-          <div className="space-y-4">
-            <h3 className="text-xs uppercase tracking-[0.3em] text-[#B6B09F]">
-              Aggregated Platform Links
-            </h3>
+          {/* PLATFORM LINKS */}
+                    <div className="space-y-4">
+                      <h3 className="text-xs uppercase tracking-[0.3em] text-[#B6B09F]">
+                        Aggregated Platform Links
+                      </h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {previewData.spotifyUrl && (
-                <div className="border border-[#B6B09F]/10 rounded-xl p-4">
-                  <p className="text-xs uppercase text-[#B6B09F] mb-2">
-                    Spotify
-                  </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {previewData.spotifyUrl && (
+                          <div className="border border-[#B6B09F]/10 rounded-xl p-4">
+                            <p className="text-xs uppercase text-[#B6B09F] mb-2">
+                              Spotify
+                            </p>
 
-                  <a
-                    href={previewData.spotifyUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-xs break-all text-[#EAE4D5]/80"
-                  >
-                    {previewData.spotifyUrl}
-                  </a>
-                </div>
-              )}
+                            <a
+                              href={previewData.spotifyUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-xs break-all text-[#EAE4D5]/80"
+                            >
+                              {previewData.spotifyUrl}
+                            </a>
+                          </div>
+                        )}
 
-              {appleLinks.appleMusic && (
-                <div className="border border-[#B6B09F]/10 rounded-xl p-4">
-                  <p className="text-xs uppercase text-[#B6B09F] mb-2">
-                    Apple Music
-                  </p>
+                        {appleLinks.appleMusic && (
+                          <div className="border border-[#B6B09F]/10 rounded-xl p-4">
+                            <p className="text-xs uppercase text-[#B6B09F] mb-2">
+                              Apple Music (Auto)
+                            </p>
 
-                  <a
-                    href={appleLinks.appleMusic}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-xs break-all text-[#EAE4D5]/80"
-                  >
-                    {appleLinks.appleMusic}
-                  </a>
-                </div>
-              )}
+                            <a
+                              href={appleLinks.appleMusic}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-xs break-all text-[#EAE4D5]/80"
+                            >
+                              {appleLinks.appleMusic}
+                            </a>
+                          </div>
+                        )}
 
-              {Object.entries(otherLinks).map(([platform, url]) => (
-                <div
-                  key={platform}
-                  className="border border-[#B6B09F]/10 rounded-xl p-4"
-                >
-                  <p className="text-xs uppercase text-[#B6B09F] mb-2">
-                    {platform}
-                  </p>
+                        {Object.entries(otherLinks).map(([platform, url]) => (
+                          <div
+                            key={platform}
+                            className="border border-[#B6B09F]/10 rounded-xl p-4"
+                          >
+                            <p className="text-xs uppercase text-[#B6B09F] mb-2">
+                              {platform}
+                            </p>
 
-                  <a
-                    href={url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-xs break-all text-[#EAE4D5]/80"
-                  >
-                    {url}
-                  </a>
-                </div>
-              ))}
-            </div>
-          </div>
-
+                            <a
+                              href={url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-xs break-all text-[#EAE4D5]/80"
+                            >
+                              {url}
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+          {/* MANUAL LINKS */}
           {/* MANUAL LINKS */}
           <div className="space-y-4">
             <h3 className="text-xs uppercase tracking-[0.3em] text-[#B6B09F]">
@@ -372,42 +372,58 @@ export default function AdminCreateSmartlink() {
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {Object.entries(manualLinks).map(([platform, value]) => (
-                <div
-                  key={platform}
-                  className="border border-[#B6B09F]/10 rounded-xl p-4"
-                >
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="text-xs uppercase text-[#B6B09F]">
-                      {platform}
-                    </span>
+              {Object.entries(manualLinks)
+                // 💡 HIDE INPUT IF AUTO-AGGREGATED LINK EXISTS
+                .filter(([platform]) => {
+                  if (platform === "appleMusic") {
+                    return !appleLinks.appleMusic && !appleLinks.itunes;
+                  }
+                  if (platform === "itunes") {
+                    return !appleLinks.itunes && !appleLinks.appleMusic;
+                  }
+                  return !normalizedLinks[platform];
+                })
+                .map(([platform, value]) => (
+                  <div
+                    key={platform}
+                    className="border border-[#B6B09F]/10 rounded-xl p-4"
+                  >
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="text-xs uppercase text-[#B6B09F]">
+                        {platform === "appleMusic"
+                          ? "Apple Music"
+                          : platform === "amazonMusic"
+                          ? "Amazon Music"
+                          : platform}
+                      </span>
 
-                    <a
-                      href={getSearchUrl(platform, previewData)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-[10px] text-[#B6B09F]/60 hover:text-white"
-                    >
-                      Search →
-                    </a>
+                      <a
+                        href={getSearchUrl(platform, previewData)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[10px] text-[#B6B09F]/60 hover:text-white"
+                      >
+                        Search →
+                      </a>
+                    </div>
+
+                    <input
+                      value={value}
+                      onChange={(e) =>
+                        setManualLinks((prev) => ({
+                          ...prev,
+                          [platform]: e.target.value,
+                        }))
+                      }
+                      placeholder={`Paste ${
+                        platform === "appleMusic" ? "Apple Music" : platform
+                      } URL`}
+                      className="w-full bg-[#0a0a0a] border border-[#B6B09F]/20 rounded-lg px-3 py-2 text-sm"
+                    />
                   </div>
-
-                  <input
-                    value={value}
-                    onChange={(e) =>
-                      setManualLinks((prev) => ({
-                        ...prev,
-                        [platform]: e.target.value,
-                      }))
-                    }
-                    placeholder="Paste URL"
-                    className="w-full bg-[#0a0a0a] border border-[#B6B09F]/20 rounded-lg px-3 py-2 text-sm"
-                  />
-                </div>
-              ))}
+                ))}
             </div>
           </div>
-
           {/* DEPLOY */}
           <button
             onClick={handleCreate}
