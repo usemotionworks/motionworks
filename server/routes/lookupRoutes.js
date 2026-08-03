@@ -204,8 +204,8 @@ router.post("/track-click", async (req, res) => {
     // Note: In local development, req.ip is often '::1' (localhost). In production on Render,
     // you will read the 'x-forwarded-for' header to get the fan's real public IP.
     const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
-    const geo = geoip.lookup(ip);
-    console.log(ip, geo)
+    const geo = geoip.lookup(ip[0]);
+
 
     // 4. Build Log Data Payload
     const clickLog = new SmartlinkAnalytics({
