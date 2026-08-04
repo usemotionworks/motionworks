@@ -303,18 +303,14 @@ router.get("/by-isrc/:isrc", protect, async (req, res) => {
       meta: {
         smartlinkId: smartlink._id,
         slug: smartlink.slug,
-
         title: smartlink.title,
         artistName: smartlink.artistName,
         coverArt: smartlink.coverArt,
-
         totalClicks: smartlink.totalClicks || 0,
-
         createdAt: smartlink.createdAt,
       },
 
       links: smartlink.links || {},
-
       analytics,
     });
   } catch (error) {

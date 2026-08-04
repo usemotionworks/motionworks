@@ -109,11 +109,16 @@ export default function IsrcAnalyticsDashboard() {
 
   // Dynamically aggregate locations if not pre-aggregated by backend
   const aggregatedLocations = useMemo(() => {
-    if (reportData?.analytics?.locations) {
-      return reportData.analytics.locations;
+    // Check both 'countries' (from getSmartlinkSummary) and 'locations'
+    const fullCountryData =
+      reportData?.analytics?.countries ||
+      reportData?.analytics?.locations;
+
+    if (fullCountryData && fullCountryData.length > 0) {
+      return fullCountryData;
     }
 
-    // Fallback: Aggregate directly from recent activity logs if backend doesn't send a locations array
+    // Fallback: Aggregate from recent activity logs if backend returned empty array
     const activity = reportData?.analytics?.recentActivity || [];
     if (!activity.length) return [];
 
