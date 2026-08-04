@@ -107,6 +107,27 @@ export default function IsrcAnalyticsDashboard() {
     return Math.round((count / total) * 100);
   };
 
+  // Dynamically aggregate locations if not pre-aggregated by backend
+  const aggregatedLocations = useMemo(() => {
+    if (reportData?.analytics?.locations) {
+      return reportData.analytics.locations;
+    }
+
+    // Fallback: Aggregate directly from recent activity logs if backend doesn't send a locations array
+    const activity = reportData?.analytics?.recentActivity || [];
+    if (!activity.length) return [];
+
+    const counts = {};
+    activity.forEach((log) => {
+      const country = log.location?.country || "Unknown";
+      counts[country] = (counts[country] || 0) + 1;
+    });
+
+    return Object.entries(counts)
+      .map(([_id, count]) => ({ _id, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [reportData]);
+
   return (
     <div className="min-h-screen bg-[#050505] text-[#B6B09F] p-6 md:p-12">
       <div className="max-w-6xl mx-auto space-y-8">
@@ -306,8 +327,43 @@ export default function IsrcAnalyticsDashboard() {
                 </div>
               </div>
 
-              {/* Grid Layout 2: Tech Specs (Browsers, OS, Devices, Geos) */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Grid Layout 2: Tech Specs & Geographic Locations */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {/* Geographic Locations */}
+                <div className="bg-[#050505] border border-[#B6B09F]/20 rounded-xl p-6">
+                  <h3 className="text-xs font-semibold uppercase text-[#B6B09F] mb-4 tracking-wider border-b border-[#B6B09F]/20 pb-2">
+                    Top Locations
+                  </h3>
+                  <div className="space-y-3">
+                    {aggregatedLocations.length === 0 ? (
+                      <p className="text-xs text-[#B6B09F]/50">No location data</p>
+                    ) : (
+                      aggregatedLocations.map((item) => {
+                        const pct = calculatePercentage(
+                          item.count,
+                          reportData.meta?.totalClicks,
+                        );
+                        return (
+                          <div key={item._id} className="space-y-1">
+                            <div className="flex justify-between text-xs">
+                              <span className="text-white truncate">{item._id}</span>
+                              <span className="text-[#B6B09F] font-mono">
+                                {item.count} ({pct}%)
+                              </span>
+                            </div>
+                            <div className="w-full bg-[#111] h-1 rounded-full overflow-hidden">
+                              <div
+                                className="bg-emerald-500 h-full rounded-full"
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+
                 {/* Browsers & In-App Apps */}
                 <div className="bg-[#050505] border border-[#B6B09F]/20 rounded-xl p-6">
                   <h3 className="text-xs font-semibold uppercase text-[#B6B09F] mb-4 tracking-wider border-b border-[#B6B09F]/20 pb-2">
@@ -371,11 +427,17 @@ export default function IsrcAnalyticsDashboard() {
                 </div>
               </div>
 
-              {/* Recent Activity Log Stream */}
+              {/* Recent Activity Log Stream (Limited to 10 Clicks) */}
               <div className="bg-[#050505] border border-[#B6B09F]/20 rounded-xl p-6">
-                <h3 className="text-xs font-semibold uppercase text-[#B6B09F] mb-4 tracking-wider border-b border-[#B6B09F]/20 pb-2">
-                  Recent Stream Logs
-                </h3>
+                <div className="flex justify-between items-center mb-4 border-b border-[#B6B09F]/20 pb-2">
+                  <h3 className="text-xs font-semibold uppercase text-[#B6B09F] tracking-wider">
+                    Recent Stream Logs
+                  </h3>
+                  <span className="text-[10px] text-[#B6B09F]/60 uppercase tracking-widest font-mono">
+                    Showing latest 10 clicks
+                  </span>
+                </div>
+
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
                     <thead>
@@ -387,26 +449,28 @@ export default function IsrcAnalyticsDashboard() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#B6B09F]/10">
-                      {reportData?.analytics?.recentActivity?.map((log) => (
-                        <tr key={log._id}>
-                          <td className="py-2.5 text-[#B6B09F]">
-                            {new Date(log.createdAt).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                              second: "2-digit",
-                            })}
-                          </td>
-                          <td className="py-2.5 font-medium text-white capitalize">
-                            {log.platform}
-                          </td>
-                          <td className="py-2.5 text-[#B6B09F] capitalize">
-                            {log.device?.type || "desktop"}
-                          </td>
-                          <td className="py-2.5 text-[#B6B09F]">
-                            {log.location?.country || "Unknown"}
-                          </td>
-                        </tr>
-                      ))}
+                      {reportData?.analytics?.recentActivity
+                        ?.slice(0, 10)
+                        ?.map((log) => (
+                          <tr key={log._id}>
+                            <td className="py-2.5 text-[#B6B09F]">
+                              {new Date(log.createdAt).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                                second: "2-digit",
+                              })}
+                            </td>
+                            <td className="py-2.5 font-medium text-white capitalize">
+                              {log.platform}
+                            </td>
+                            <td className="py-2.5 text-[#B6B09F] capitalize">
+                              {log.device?.type || "desktop"}
+                            </td>
+                            <td className="py-2.5 text-[#B6B09F]">
+                              {log.location?.country || "Unknown"}
+                            </td>
+                          </tr>
+                        ))}
                     </tbody>
                   </table>
                 </div>
