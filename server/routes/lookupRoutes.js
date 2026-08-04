@@ -191,6 +191,7 @@ router.post("/track-click", async (req, res) => {
   try {
     const { smartlinkId, platform, targetUrl } = req.body;
 
+
     // 1. Fetch the smartlink settings
     const smartlink = await Smartlink.findById(smartlinkId);
     if (!smartlink)
@@ -201,11 +202,22 @@ router.post("/track-click", async (req, res) => {
     const uaResult = parser.getResult();
 
     // 3. Resolve Geolocation from IP Address
-    // Note: In local development, req.ip is often '::1' (localhost). In production on Render,
-    // you will read the 'x-forwarded-for' header to get the fan's real public IP.
-    const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
-    const geo = geoip.lookup(ip[0]);
+    // 1. Fetch IP Address
+        let rawIp =
+          req.headers["x-forwarded-for"]?.split(",")[0] || req.socket.remoteAddress;
 
+        // 💡 LOCAL TEST OVERRIDE: If running on localhost, substitute with a real public IP
+        if (
+          !rawIp ||
+          rawIp === "127.0.0.1" ||
+          rawIp === "::1" ||
+          rawIp.includes("::ffff:127.0.0.1")
+        ) {
+          // Substitute a real IP for testing geoip resolution (e.g. Lagos, NG IP)
+          rawIp = req.headers["x-test-ip"] || "102.89.23.1";
+        }
+
+        const geo = geoip.lookup(rawIp);
 
     // 4. Build Log Data Payload
     const clickLog = new SmartlinkAnalytics({
