@@ -6,6 +6,7 @@ import { FaTimes } from "react-icons/fa";
 const LegalModal = ({ isOpen, onClose, onSign, legalName, setLegalName }) => {
   const { user } = useUserStore();
 
+  console.log(user)
   if (!isOpen) return null;
 
   return (

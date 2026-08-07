@@ -27,6 +27,7 @@ import lookupRoutes from "./routes/lookupRoutes.js";
 
 //Error Middleware
 import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
+import Ticket from "./models/Tickets.js";
 dotenv.config();
 
 //Tests
