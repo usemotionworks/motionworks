@@ -16,7 +16,6 @@ import { Smartlink } from "./models/smartlink.js";
 //Routes
 import authRoutes from "./routes/authRoutes.js";
 import royaltyRoutes from "./routes/royaltyRoutes.js";
-import dashboardRoutes from "./routes/dashboardRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import scoutRoutes from "./routes/scoutRoutes.js";
@@ -24,6 +23,9 @@ import releaseRoutes from "./routes/releaseRoutes.js";
 import collaborationsRoutes from "./routes/collaborations.js";
 import ticketRoutes from "./routes/ticketRoutes.js";
 import lookupRoutes from "./routes/lookupRoutes.js";
+import reportRoutes from "./routes/reportRoutes.js";
+import payoutRoutes from "./routes/payoutRoutes.js";
+
 
 //Error Middleware
 import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
@@ -114,7 +116,6 @@ app.get("/health", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/royalties", royaltyRoutes);
-app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/scouts", scoutRoutes);
@@ -122,6 +123,9 @@ app.use("/api/releases", releaseRoutes);
 app.use("/api/collaborations", collaborationsRoutes);
 app.use("/api/tickets", ticketRoutes);
 app.use("/api/lookup", lookupRoutes);
+app.use("/api/reports", reportRoutes);
+app.use("/api/payouts", payoutRoutes);
+
 
 app.use(notFound);
 app.use(errorHandler);

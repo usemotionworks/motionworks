@@ -148,6 +148,8 @@ const releaseSchema = new mongoose.Schema(
       enum: ["draft", "pending", "distributed", "rejected"],
       default: "draft",
     },
+    takedownRequest: { type: Boolean, default: false },
+    adminTakenDown:{type: Boolean, default: false},
     rejectionReason: { type: String, default: "" },
 
     recoupableExpenses: { type: Number, default: 0 },

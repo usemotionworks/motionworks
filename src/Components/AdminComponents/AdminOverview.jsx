@@ -7,7 +7,8 @@ const AdminOverview = () => {
   const [stats, setStats] = useState({
     totalArtists: 0,
     pendingReleases: 0,
-    totalWithdrawalAmount: 0,
+    pendingWithdrawals: 0,
+    takedownRequests: 0
   });
   const [loading, setLoading] = useState(true);
 
@@ -40,9 +41,15 @@ const AdminOverview = () => {
     },
     {
       label: "Pending Withdrawals",
-      value: `$${stats.totalWithdrawalAmount.toLocaleString()}`,
+      value: stats.pendingWithdrawals.length,
       icon: <FaWallet className="text-red-400" />,
       link: "/admin/withdrawals",
+    },
+    {
+      label: "Pending Takedowns",
+      value: stats.takedownRequests,
+      icon: <FaMusic className="text-yellow-500" />,
+      link: "/admin/takedowns",
     },
   ];
 
@@ -116,22 +123,34 @@ const AdminOverview = () => {
         </div>
 
         <div className="bg-[#050505] border border-[#B6B09F]/10 rounded-xl p-6">
-          <h2 className="text-lg font-bold text-[#EAE4D5] mb-4">
-            System Health
+          <h2 className="text-lg font-bold text-[#EAE4D5] mb-4 flex items-center gap-2">
+            <span className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
+            Needs Takedown
           </h2>
-          <div className="space-y-3">
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-[#B6B09F]">Database (MongoDB)</span>
-              <span className="text-green-500 font-bold">ONLINE</span>
-            </div>
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-[#B6B09F]">S3 Bucket Storage</span>
-              <span className="text-green-500 font-bold">ACTIVE</span>
-            </div>
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-[#B6B09F]">Slack Webhooks</span>
-              <span className="text-green-500 font-bold">CONNECTED</span>
-            </div>
+
+          <div className="space-y-4">
+            {stats.takedownRequests > 0 ? (
+              <div className="flex items-center justify-between p-4 bg-[#0a0a0a] border border-[#B6B09F]/5 rounded-lg">
+                <div>
+                  <p className="text-[#EAE4D5] text-sm font-medium">
+                    {stats.takedownRequests} New Request(s)
+                  </p>
+                  <p className="text-[#B6B09F] text-xs">
+
+                  </p>
+                </div>
+                <Link
+                  to="/admin/takedowns"
+                  className="px-4 py-2 bg-[#EAE4D5] text-[#0a0a0a] text-xs font-bold rounded hover:opacity-90"
+                >
+                  REVIEW NOW
+                </Link>
+              </div>
+            ) : (
+              <p className="text-[#B6B09F] text-sm italic">
+                Queue is empty. Everything is live!
+              </p>
+            )}
           </div>
         </div>
       </div>

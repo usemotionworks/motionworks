@@ -14,10 +14,13 @@ const AdminLayout = () => {
     { name: "Overview", path: "/admin" },
     { name: "Users & KYC", path: "/admin/users" },
     { name: "Release Queue", path: "/admin/releases" },
+     { name: "Takedown Queue", path: "/admin/takedowns" },
     { name: "Withdrawals", path: "/admin/withdrawals" },
     { name: "Activity Logs", path: "/admin/logs" },
     { name: "Support Tickets", path: "/admin/tickets" },
     { name: "Smartlink Queue", path: "/admin/smartlink" },
+    { name: "Create Reports", path: "/admin/reporting" },
+    { name: "View Reports", path: "/admin/reports" },
   ];
 
   const handleLogout = () => {

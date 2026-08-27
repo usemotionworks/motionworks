@@ -246,13 +246,16 @@ export default function IsrcAnalyticsDashboard() {
                     </div>
                   )}
 
-                  <div>
+                  <div >
                     <h2 className="text-xl font-bold text-white">
                       {reportData.meta?.title || selectedRelease?.title}
                     </h2>
                     <p className="text-[#B6B09F] text-sm">
                       {reportData.meta?.artistName || "Analytics View"}
-                    </p>
+                      </p>
+                      <p className="text-[#B6B09F] text-sm">
+                       <a href={`https://usemotionworks.com/share/${reportData.meta?.slug || "Analytics View"}`} target="_blank" rel="noopener noreferrer">View SmartLink</a>
+                      </p>
                   </div>
                 </div>
 

@@ -6,8 +6,6 @@ import {
   sendVerificationEmail,
   sendForgotPasswordEmail,
 } from "../utils/emailService.js";
-import Release from "../models/Release.js";
-import Withdrawal from "../models/Withdrawal.js";
 
 // @desc    Register a new artist/user
 // @route   POST /api/auth/register

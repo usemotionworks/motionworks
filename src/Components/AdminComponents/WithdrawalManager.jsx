@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import axios from "../../lib/axios";
 import { toast } from "react-hot-toast";
+import { FaBuilding, FaUser, FaCreditCard } from "react-icons/fa";
 
 const WithdrawalManager = () => {
   const [withdrawals, setWithdrawals] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // State for the rejection modal
+  // State for rejection modal
   const [selectedWithdrawal, setSelectedWithdrawal] = useState(null);
   const [notes, setNotes] = useState("");
 
@@ -32,7 +33,6 @@ const WithdrawalManager = () => {
         notes: adminNotes,
       });
       toast.success(res.data.message);
-      // Remove the processed withdrawal from the UI list
       setWithdrawals((prev) => prev.filter((w) => w._id !== id));
       setSelectedWithdrawal(null);
       setNotes("");
@@ -41,13 +41,13 @@ const WithdrawalManager = () => {
     }
   };
 
-  if (loading) return <div className="text-[#B6B09F]">Loading requests...</div>;
+  if (loading) return <div className="text-[#B6B09F] p-6">Loading requests...</div>;
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-2">Withdrawal Requests</h1>
+      <h1 className="text-3xl font-bold mb-2 text-[#EAE4D5]">Withdrawal Requests</h1>
       <p className="text-[#B6B09F] mb-6">
-        Review and process artist payout requests.
+        Review bank accounts and approve or reject pending artist payouts.
       </p>
 
       {withdrawals.length === 0 ? (
@@ -60,7 +60,8 @@ const WithdrawalManager = () => {
             <thead className="bg-[#B6B09F]/5 text-[#EAE4D5] text-sm uppercase">
               <tr>
                 <th className="px-6 py-4">Artist</th>
-                <th className="px-6 py-4">Amount</th>
+                <th className="px-6 py-4">Amount (USD)</th>
+                <th className="px-6 py-4">Bank Details</th>
                 <th className="px-6 py-4">Requested On</th>
                 <th className="px-6 py-4 text-right">Actions</th>
               </tr>
@@ -70,15 +71,23 @@ const WithdrawalManager = () => {
                 <tr key={req._id} className="text-[#EAE4D5] text-sm">
                   <td className="px-6 py-4">
                     <p className="font-bold">
-                      {req.artistId?.stageName || "Unknown Artist"}
+                      {req.user?.stageName || req.user?.legalName || "Unknown Artist"}
                     </p>
-                    <p className="text-xs text-[#B6B09F]">
-                      {req.artistId?.email}
-                    </p>
+                    <p className="text-xs text-[#B6B09F]">{req.user?.email}</p>
                   </td>
-                  <td className="px-6 py-4 font-mono font-bold">
-                    {req.currency === "NGN" ? "₦" : "$"}
-                    {req.amount.toLocaleString()}
+                  <td className="px-6 py-4 font-mono font-bold text-emerald-400">
+                    ${req.amountUsd?.toFixed(2)}
+                  </td>
+                  <td className="px-6 py-4 text-xs space-y-1">
+                    <p className="flex items-center gap-1">
+                      <FaBuilding className="text-[#B6B09F]" /> {req.bankDetails?.bankName}
+                    </p>
+                    <p className="flex items-center gap-1 font-mono">
+                      <FaCreditCard className="text-[#B6B09F]" /> {req.bankDetails?.accountNumber}
+                    </p>
+                    <p className="flex items-center gap-1">
+                      <FaUser className="text-[#B6B09F]" /> {req.bankDetails?.accountName}
+                    </p>
                   </td>
                   <td className="px-6 py-4 text-[#B6B09F]">
                     {new Date(req.createdAt).toLocaleDateString()}
@@ -108,16 +117,13 @@ const WithdrawalManager = () => {
       {selectedWithdrawal && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
           <div className="bg-[#0a0a0a] border border-[#B6B09F]/20 p-8 rounded-xl max-w-md w-full mx-4">
-            <h2 className="text-2xl font-bold text-[#EAE4D5] mb-2">
-              Reject Withdrawal
-            </h2>
+            <h2 className="text-2xl font-bold text-[#EAE4D5] mb-2">Reject Payout</h2>
             <p className="text-[#B6B09F] mb-4 text-sm">
-              Are you sure you want to reject this payout of{" "}
-              <span className="text-[#EAE4D5] font-bold">
-                {selectedWithdrawal.currency === "NGN" ? "₦" : "$"}
-                {selectedWithdrawal.amount.toLocaleString()}
-              </span>
-              ? The funds will be refunded to their wallet.
+              Reject payout of{" "}
+              <span className="text-emerald-400 font-bold">
+                ${selectedWithdrawal.amountUsd?.toFixed(2)}
+              </span>{" "}
+              for {selectedWithdrawal.user?.stageName}? The amount will become available again in their wallet.
             </p>
 
             <label className="block text-[#EAE4D5] text-sm font-medium mb-2">
@@ -127,14 +133,12 @@ const WithdrawalManager = () => {
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               className="w-full px-4 py-3 bg-transparent border border-[#B6B09F]/40 rounded-lg text-[#EAE4D5] focus:border-[#EAE4D5] outline-none transition-colors mb-6 h-24 text-sm"
-              placeholder="Invalid bank details, suspicious activity, etc."
+              placeholder="Invalid bank details, name mismatch, etc."
             />
 
             <div className="flex gap-4">
               <button
-                onClick={() =>
-                  handleProcess(selectedWithdrawal._id, "reject", notes)
-                }
+                onClick={() => handleProcess(selectedWithdrawal._id, "reject", notes)}
                 className="flex-grow py-3 bg-red-500 text-white font-bold rounded-lg hover:bg-red-600 transition-colors text-sm"
               >
                 Confirm Reject

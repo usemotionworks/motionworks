@@ -92,6 +92,27 @@ export const sendReleaseApprovalEmail = async (email, name, releaseTitle) => {
   });
 };
 
+export const sendTakedownApprovalEmail = async (email, name, releaseTitle) => {
+  const html = emailWrapper(`
+    <h1 style="color: #EAE4D5; font-size: 24px; font-weight: bold; margin-bottom: 15px;">We're working on your request.</h1>
+    <p style="font-size: 16px; line-height: 1.6; margin-bottom: 25px;"> Your release <strong>"${releaseTitle}"</strong> has been queued to be taken down.</p>
+
+    <p style="font-size: 16px; line-height: 1.6; margin-bottom: 25px;">Our team is taking down your song as requested.</p>
+
+    <div style="text-align: center; margin: 35px 0;">
+      <a href="${process.env.FRONTEND_URL}/dashboard/releases" style="background-color: #EAE4D5; color: #0a0a0a; padding: 14px 30px; border-radius: 8px; font-weight: bold; text-decoration: none; display: inline-block; font-size: 14px;">View in Dashboard</a>
+    </div>
+  `);
+
+  return await resend.emails.send({
+    from: "Motion Works <info@usemotionworks.com>",
+    to: email,
+    subject: `Taken Down: ${releaseTitle} | Motion Works`,
+    html,
+  });
+};
+
+
 // 📩 Send Release Rejection Email
 export const sendReleaseRejectionEmail = async (
   email,

@@ -9,6 +9,8 @@ import {
   getAdminStats,
   getAuditLogs,
   getDistributedReleases,
+  processTakedown,
+  getPendingTakedowns
 } from "../controllers/adminController.js";
 import { protect, admin } from "../middleware/authMiddleware.js";
 
@@ -26,9 +28,11 @@ router.put("/users/:id/verify", protect, admin, verifyUserManually);
 
 // 🚀 New Release Queue Routes
 router.get("/releases", protect, admin, getPendingReleases);
+router.get("/releases/takedowns", protect, admin, getPendingTakedowns);
 router.get("/distributed-releases", protect, admin, getDistributedReleases);
 
 router.put("/releases/:id", protect, admin, processRelease);
+router.put("/releases/:id/takedown", protect, admin, processTakedown);
 
 router.get("/audit-logs", protect, admin, getAuditLogs);
 

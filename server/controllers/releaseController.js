@@ -460,3 +460,50 @@ export const getReleaseById = async (req, res) => {
     });
   }
 };
+
+export const takedownSong = async (req, res) => {
+  try {
+    const query =
+      req.user.role === "admin"
+        ? {
+            _id: req.params.id,
+            status: "distributed",
+          }
+        : {
+            _id: req.params.id,
+            releaseOwner: req.user._id,
+            status: "distributed",
+          };
+
+    const release = await Release.findOneAndUpdate(
+      query,
+      { takedownRequest: true },
+      { new: true }
+    );
+
+    if (!release) {
+      return res.status(404).json({
+        message: "Distributed release not found.",
+      });
+    }
+
+    const user = await User.findById(release.releaseOwner);
+
+    if (user) {
+      notifyAdmin(
+        `💥 Takedown Request: ${release.title}, user: ${user.stageName}`
+      );
+    }
+
+    return res.status(200).json({
+      message: "Takedown request submitted successfully.",
+      release,
+    });
+  } catch (error) {
+    console.error("Error requesting takedown:", error);
+
+    return res.status(500).json({
+      message: "Server error while requesting takedown.",
+    });
+  }
+};

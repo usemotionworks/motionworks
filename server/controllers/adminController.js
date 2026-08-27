@@ -1,5 +1,4 @@
 // controllers/adminController.js
-import Withdrawal from "../models/Withdrawal.js";
 import User from "../models/User.js";
 import Release from "../models/Release.js";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
@@ -8,9 +7,11 @@ import { s3Client } from "./releaseController.js";
 import {
   sendReleaseApprovalEmail,
   sendReleaseRejectionEmail,
+  sendTakedownApprovalEmail
 } from "../utils/emailService.js";
-import { logAdminAction } from "../middleware/authMiddleware.js";
 import AuditLog from "../models/AuditLog.js";
+import Payout from "../models/Payout.js";
+
 
 import dotenv from "dotenv";
 dotenv.config();
@@ -20,72 +21,72 @@ dotenv.config();
 // @access  Private/Admin
 export const getPendingWithdrawals = async (req, res) => {
   try {
-    // Populate pulls in the Artist's name and email so you know who you are paying
-    const pendingRequests = await Withdrawal.find({ status: "pending" })
-      .populate("artistId", "legalName stageName email")
+    const pendingRequests = await Payout.find({ status: "pending" })
+      .populate("user", "legalName stageName email")
       .sort({ createdAt: 1 }); // Oldest first
 
     res.status(200).json(pendingRequests);
   } catch (error) {
-    res.status(500).json({ message: "Error fetching pending withdrawals" });
+    res.status(500).json({ message: "Error fetching pending withdrawals", error: error.message });
   }
 };
-
 // @desc    Approve or Reject a withdrawal
 // @route   PUT /api/admin/withdrawals/:id
 // @access  Private/Admin
 export const processWithdrawal = async (req, res) => {
   const { action, notes } = req.body; // action = 'approve' or 'reject'
-  const withdrawalId = req.params.id;
+  const payoutId = req.params.id;
 
   try {
-    const withdrawal = await Withdrawal.findById(withdrawalId);
+    const payout = await Payout.findById(payoutId);
 
-    if (!withdrawal) {
-      return res.status(404).json({ message: "Withdrawal request not found" });
+    if (!payout) {
+      return res.status(404).json({ message: "Payout request not found" });
     }
 
-    if (withdrawal.status !== "pending") {
-      return res
-        .status(400)
-        .json({ message: "This request has already been processed." });
+    if (payout.status !== "pending") {
+      return res.status(400).json({ message: "This request has already been processed." });
     }
 
     if (action === "approve") {
-      // You have already manually sent the money via Paystack/Bank Transfer
-      withdrawal.status = "approved";
-      withdrawal.adminNotes = notes || "Processed successfully.";
-      await withdrawal.save();
+      payout.status = "completed";
+      payout.processedAt = new Date();
+      payout.failureReason = undefined;
+      await payout.save();
 
-      return res
-        .status(200)
-        .json({ message: "Withdrawal marked as approved." });
+      AuditLog.create({
+        adminId: req.user._id,
+        action: `approved payout of ${payout.amountUsd} USD`,
+        targetId: payout._id,
+        notes: notes || "Processed successfully.",
+      });
+
+      return res.status(200).json({ message: "Payout approved and marked completed." });
     }
 
     if (action === "reject") {
-      // If rejected (e.g., fraud detected, or invalid bank details), we must refund the user's wallet
-      const user = await User.findById(withdrawal.artistId);
+      // Rejection updates status to 'rejected'.
+      // The wallet summary aggregation will automatically stop counting this amount against available balance.
+      payout.status = "rejected payout";
+      payout.failureReason = notes || "Rejected by admin";
+      payout.processedAt = new Date();
+      await payout.save();
 
-      if (withdrawal.currency === "USD")
-        user.walletBalanceUSD += withdrawal.amount;
-      if (withdrawal.currency === "NGN")
-        user.walletBalanceNGN += withdrawal.amount;
-      await user.save();
+      AuditLog.create({
+        adminId: req.user._id,
+        action: `rejected payout of ${payout.amountUsd} USD`,
+        targetId: payout._id,
+        notes: payout.failureReason,
+      });
 
-      withdrawal.status = "rejected";
-      withdrawal.adminNotes =
-        notes || "Rejected by Admin. Funds refunded to wallet.";
-      await withdrawal.save();
-
-      return res
-        .status(200)
-        .json({ message: "Withdrawal rejected and funds refunded." });
+      return res.status(200).json({ message: "Payout request rejected. Funds released back to user." });
     }
+
+    return res.status(400).json({ message: "Invalid action type" });
   } catch (error) {
-    res.status(500).json({ message: "Error processing the withdrawal" });
+    res.status(500).json({ message: "Error processing the withdrawal", error: error.message });
   }
 };
-
 // @desc    Get all users for the platform
 // @route   GET /api/admin/users
 // @access  Private/Admin
@@ -264,19 +265,16 @@ export const getAdminStats = async (req, res) => {
   try {
     const totalArtists = await User.countDocuments({ role: "artist" }); // or just 'user'
     const pendingReleases = await Release.countDocuments({ status: "pending" });
+    const takedownRequests = await Release.countDocuments({ takedownRequest: true , adminTakenDown: false});
 
-    // Assuming you'll have a Withdrawal model later
-    const pendingWithdrawals = await Withdrawal.find({ status: "pending" });
-    const totalWithdrawalAmount = pendingWithdrawals.reduce(
-      (acc, curr) => acc + curr.amount,
-      0,
-    );
+    const pendingWithdrawals = await Payout.find({ status: "pending" });
+
 
     res.json({
       totalArtists,
       pendingReleases,
+      takedownRequests,
       pendingWithdrawals, // Placeholder for now
-      totalWithdrawalAmount, // Placeholder
     });
   } catch (error) {
     res.status(500).json({ message: "Error fetching admin stats" });
@@ -307,5 +305,78 @@ export const getDistributedReleases = async (req, res) => {
   } catch (error) {
     console.error("ERROR IN GET DISTRIBUTED RELEASES:", error);
     res.status(500).json({ message: "Error fetching distributed releases" });
+  }
+};
+
+export const processTakedown = async (req, res) => {
+  const {  reason } = req.body;
+
+
+  try {
+    // We populate the owner to get their email and name for the notification
+    const release = await Release.findByIdAndUpdate(
+      req.params.id,
+      { adminTakenDown: true },
+      { new: true }
+    );
+
+    if (!release) {
+      return res.status(404).json({ message: "Release not found" });
+    }
+
+
+    await AuditLog.create({
+      adminId: req.user._id,
+      action: `RELEASE_TAKENDOWN`,
+      targetId: release._id,
+      targetModel: "Release",
+      changes: { from: false, to:true, reason: reason || "N/A" },
+      ipAddress: req.ip,
+    });
+
+    const user = await User.findById(release.releaseOwner)
+
+    // --- 📧 Trigger Email Notifications ---
+    const ownerEmail = user?.email;
+    const ownerName = release.releaseOwner?.stageName || "Artist";
+
+    if (ownerEmail) {
+      try {
+          // Or "approved", matching your button value
+          await sendTakedownApprovalEmail(ownerEmail, ownerName, release.title);
+
+      } catch (emailError) {
+        // We log the error but don't stop the request; the release is already saved
+        console.error("Failed to send notification email:", emailError);
+      }
+    }
+
+    res.status(200).json({
+      message: `Release marked as Taken Down`,
+      release,
+    });
+  } catch (error) {
+    console.error("Process Release Error:", error);
+    res.status(500).json({ message: "Error processing the release" });
+  }
+};
+
+export const getPendingTakedowns = async (req, res) => {
+  try {
+    const releases = await Release.find({
+      takedownRequest: true,
+      adminTakenDown: false,
+    })
+      .populate("releaseOwner", "stageName email")
+      .sort({ createdAt: 1 })
+      .lean();
+
+    res.status(200).json(releases);
+  } catch (error) {
+    console.error("ERROR IN GET PENDING TAKEDOWN REQUESTS:", error);
+
+    res.status(500).json({
+      message: "Error fetching pending Takedown requests",
+    });
   }
 };

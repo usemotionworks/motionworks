@@ -63,6 +63,10 @@ import ActivityLog from "./Components/AdminComponents/ActivityLog";
 import AdminTickets from "./Components/AdminComponents/AdminTickets";
 import SmartlinkDashboard from "./Components/AdminComponents/SmartlinkDashboard";
 import AdminCreateSmartlink from "./Components/AdminComponents/AdminCreateSmartlink";
+import TakedownQueue from "./Components/AdminComponents/TakedownQueue";
+import Reporting from "./Components/AdminComponents/Reporting";
+import ManageReports from "./Components/AdminComponents/ManageReports";
+
 
 //Auth Pages
 import { useUserStore } from "./store/useUserStore";
@@ -137,8 +141,11 @@ const AppContent = () => {
               <Route index element={<AdminOverview />} />
               <Route path="users" element={<UserManagement />} />
               <Route path="releases" element={<ReleaseApprovalQueue />} />
+              <Route path="takedowns" element={<TakedownQueue />} />
               <Route path="withdrawals" element={<WithdrawalManager />} />
               <Route path="logs" element={<ActivityLog />} />
+              <Route path="reporting" element={<Reporting />} />
+              <Route path="reports" element={<ManageReports />} />
               <Route path="tickets" element={<AdminTickets />} />
               <Route path="smartlink" element={<SmartlinkDashboard />} />
               <Route

@@ -1,50 +1,69 @@
 import { useUserStore } from "../../store/useUserStore";
-import { FaMusic, FaEye, FaWallet } from "react-icons/fa";
+import { FaMusic, FaEye } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import axios from "../../lib/axios";
+
 const DashboardOverview = () => {
   const { user } = useUserStore();
   const navigate = useNavigate();
 
   const [releases, setReleases] = useState([]);
+  const [totalStreams, setTotalStreams] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchReleases = async () => {
+    const fetchDashboardData = async () => {
       try {
-        // Assuming your axios instance is configured to pass the auth token
-        // e.g., headers: { Authorization: `Bearer ${user.token}` }
-        const { data } = await axios.get("/api/releases");
-        setReleases(data);
+        const { data: releaseList } = await axios.get("/api/releases");
+        setReleases(releaseList);
+
+        // Fetch report totals concurrently for each release to compute overall streams
+        const reportPromises = releaseList.map(async (rel) => {
+          try {
+            const { data } = await axios.get(`/api/reports/${rel._id}`);
+            return data?.totals?.totalStreams || 0;
+          } catch (err) {
+            return 0;
+          }
+        });
+
+        const streamCounts = await Promise.all(reportPromises);
+        const cumulativeStreams = streamCounts.reduce(
+          (acc, curr) => acc + curr,
+          0
+        );
+        setTotalStreams(cumulativeStreams);
       } catch (error) {
-        console.error("Failed to fetch dashboard releases", error);
+        console.error("Failed to fetch dashboard data", error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchReleases();
+    fetchDashboardData();
   }, []);
+
+  // Filter active releases based on your exact criteria
+  const activeReleasesCount = releases.filter(
+    (release) =>
+      release.status === "distributed" &&
+      !release.takedownRequest &&
+      !release.adminTakenDown
+  ).length;
 
   const stats = [
     {
       name: "Total Streams",
-      value: "0", // Update this when you have stream tracking
+      value: isLoading ? "..." : totalStreams.toLocaleString(),
       icon: <FaEye />,
       color: "text-blue-400",
     },
     {
       name: "Active Releases",
-      value: isLoading ? "..." : releases.length.toString(),
+      value: isLoading ? "..." : activeReleasesCount.toString(),
       icon: <FaMusic />,
       color: "text-green-400",
-    },
-    {
-      name: "Balance",
-      value: "₦0.00", // Update this when you connect your wallet/revenue logic
-      icon: <FaWallet />,
-      color: "text-[#EAE4D5]",
     },
   ];
 
