@@ -65,7 +65,7 @@ const Signup = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
               <label className="block text-[#EAE4D5] text-sm font-medium mb-2">
-                Legal Name
+                Legal Name <span className="text-[#B6B09F] text-xs">(should match BVN)</span>
               </label>
               <input
                 type="text"
@@ -73,7 +73,7 @@ const Signup = () => {
                 value={formData.legalName}
                 onChange={handleChange}
                 className="w-full px-4 py-3 bg-transparent border border-[#B6B09F]/40 rounded-lg text-[#EAE4D5] focus:border-[#EAE4D5] focus:outline-none transition-colors"
-                placeholder="As it appears on ID"
+                placeholder="Should match BVN"
                 required
               />
             </div>
