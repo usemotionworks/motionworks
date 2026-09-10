@@ -87,7 +87,7 @@ export const requestPayout = async (req, res) => {
       return res.status(400).json({ message: "Insufficient withdrawable balance" });
     }
 
-    const MIN_WITHDRAWAL_USD = 100;
+    const MIN_WITHDRAWAL_USD = 500;
     if (!amountUsd || amountUsd < MIN_WITHDRAWAL_USD) {
       return res.status(400).json({ message: `Minimum withdrawal amount is $${MIN_WITHDRAWAL_USD}` });
     }

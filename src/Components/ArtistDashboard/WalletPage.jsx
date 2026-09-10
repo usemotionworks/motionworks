@@ -90,8 +90,8 @@ const WalletPage = () => {
     e.preventDefault();
     const amount = parseFloat(payoutAmount);
 
-    if (isNaN(amount) || amount < 100) {
-      return toast.error("Minimum withdrawal amount is $100");
+    if (isNaN(amount) || amount < 500) {
+      return toast.error("Minimum withdrawal amount is $500");
     }
 
     const withdrawable = earningsData.availableBalanceUsd ?? earningsData.netPayoutUsd;
@@ -194,7 +194,7 @@ const WalletPage = () => {
               </p>
               {/* Minimum Threshold Badge */}
               <span className="text-xs bg-[#B6B09F]/10 text-[#B6B09F] px-2.5 py-1 rounded-full border border-[#B6B09F]/20 font-medium">
-                Min. Withdrawal: $100.00
+                Min. Withdrawal: $500.00
               </span>
             </div>
 
@@ -203,9 +203,9 @@ const WalletPage = () => {
             </h2>
 
             {/* Dynamic Status Helper Text */}
-            {!isFetchingEarnings && currentAvailable < 100 && (
+            {!isFetchingEarnings && currentAvailable < 500 && (
               <p className="text-xs text-yellow-500/80 mt-2">
-                You need at least $100.00 in available net balance to request a payout.
+                You need at least $500.00 in available net balance to request a payout.
               </p>
             )}
           </div>
@@ -213,12 +213,12 @@ const WalletPage = () => {
           <div className="flex flex-wrap gap-4 mt-6">
             <button
               onClick={() => setShowPayoutModal(true)}
-              disabled={!isVerified || currentAvailable < 100}
+              disabled={!isVerified || currentAvailable < 500}
               className="flex items-center gap-2 px-6 py-3 bg-[#EAE4D5] text-[#0a0a0a] font-bold rounded-lg hover:bg-opacity-90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <FaArrowUp />{" "}
-              {currentAvailable < 100 && isVerified
-                ? "Below $100 Minimum"
+              {currentAvailable < 500 && isVerified
+                ? "Below $500 Minimum"
                 : "Request Payout"}
             </button>
 
