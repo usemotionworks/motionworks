@@ -93,6 +93,7 @@ const ReportSchema = new mongoose.Schema(
             "Ad-Supported Streaming",
             "UGC Licensing",
             "UGC Consumption",
+            "UGC Ad Revenue Share",
             "Claimed UGC",
             "Download",
             "Other",

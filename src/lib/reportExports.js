@@ -40,6 +40,7 @@ export const ALLOWED_CHANNELS = [
   "Ad-Supported Streaming",
   "UGC Licensing",
   "UGC Consumption",
+  "UGC Ad Revenue Share",
   "Claimed UGC",
   "Download",
   "Other",
