@@ -166,6 +166,10 @@ const AppContent = () => {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/smartlink/edit/:id"
+              element={<CreateSmartlink />}
+            />
 
             <Route
               path="smartlink/analytics"

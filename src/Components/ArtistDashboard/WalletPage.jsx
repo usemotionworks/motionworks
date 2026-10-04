@@ -34,6 +34,8 @@ const WalletPage = () => {
     netPayoutUsd: 0,
     totalWithdrawnUsd: 0,
     availableBalanceUsd: 0,
+    artistSharePercentage: 80,
+    platformFeePercentage: 20,
   });
   const [isFetchingEarnings, setIsFetchingEarnings] = useState(true);
   const [payoutHistory, setPayoutHistory] = useState([]);
@@ -49,6 +51,8 @@ const WalletPage = () => {
         ...data,
         availableBalanceUsd: data.availableBalanceUsd ?? data.netPayoutUsd,
       });
+
+
     } catch (error) {
       console.error("Failed to fetch wallet summary:", error);
     } finally {
@@ -114,7 +118,12 @@ const WalletPage = () => {
       setShowPayoutModal(false);
       setPayoutAmount("");
       setBankForm({ accountNumber: "", bankName: "", accountName: "" });
-      fetchEarningsSummary(); // Refresh balances
+
+
+      await Promise.all([
+        fetchEarningsSummary(),
+        fetchPayoutHistory(),
+      ]);
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to process payout request");
     } finally {
@@ -155,7 +164,7 @@ const WalletPage = () => {
         <div className="bg-[#0a0a0a] border border-[#B6B09F]/10 p-6 rounded-xl">
           <div className="flex justify-between items-center mb-3">
             <span className="text-[#B6B09F] text-xs font-medium uppercase tracking-wider">
-              Distribution Fee (20%)
+              Distribution Fee ({earningsData.platformFeePercentage}%)
             </span>
             <FaPercent className="text-yellow-400 text-sm" />
           </div>
@@ -171,7 +180,7 @@ const WalletPage = () => {
         <div className="bg-[#0a0a0a] border border-emerald-500/20 bg-emerald-500/[0.02] p-6 rounded-xl">
           <div className="flex justify-between items-center mb-3">
             <span className="text-emerald-400 text-xs font-medium uppercase tracking-wider">
-              Your Net Revenue (80%)
+              Your Net Revenue ({earningsData.artistSharePercentage}%)
             </span>
             <FaPiggyBank className="text-emerald-400 text-lg" />
           </div>
@@ -254,7 +263,8 @@ const WalletPage = () => {
             </div>
             <div className="flex justify-between items-center">
               <span className="text-[#B6B09F]">Royalty Split Rate</span>
-              <span className="text-[#EAE4D5] font-bold text-sm">80% Artist / 20% Platform</span>
+              <span className="text-[#EAE4D5] font-bold text-sm">{earningsData.artistSharePercentage}% Artist /{" "}
+              {earningsData.platformFeePercentage}% Platform</span>
             </div>
           </div>
 

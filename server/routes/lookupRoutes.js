@@ -8,6 +8,7 @@ import spotifyApi from "../utils/spotify.js";
 import { resolveSpotifyEntity } from "../utils/resolvers/spotifyResolver.js";
 import { runResolvers } from "../services/resolverPipeline.js";
 import Release from "../models/Release.js";
+import mongoose from "mongoose";
 
 const router = express.Router();
 
@@ -394,6 +395,192 @@ router.get("/by-upc/:upc", protect, async (req, res) => {
   }
 });
 
+
+
+router.patch("/edit/:id", protect, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      slug,
+      isrc,
+      title,
+      artistName,
+      coverArt,
+      links,
+      externalId,
+    } = req.body;
+
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ error: "Invalid smartlink ID" });
+    }
+
+    const smartlink = await Smartlink.findById(id);
+
+    if (!smartlink) {
+      return res.status(404).json({ error: "Smartlink not found" });
+    }
+
+    const release = await Release.findById(smartlink.releaseId);
+
+    if (!release) {
+      return res.status(404).json({ error: "Release not found" });
+    }
+
+    const isOwner =
+      release.releaseOwner.toString() === req.user.id;
+    const isAdmin = req.user.role === "admin";
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+
+    if (release.status !== "distributed" && !isAdmin) {
+      return res.status(400).json({
+        error: "Only distributed releases can be edited",
+      });
+    }
+
+    // Validate slug
+    if (typeof slug !== "string" || !slug.trim()) {
+      return res.status(400).json({
+        error: "A valid slug is required",
+      });
+    }
+
+    const normalizedSlug = slug.trim().toLowerCase();
+
+    const existingSlug = await Smartlink.findOne({
+      slug: normalizedSlug,
+      _id: { $ne: smartlink._id },
+    });
+
+    if (existingSlug) {
+      return res.status(400).json({
+        error: "Slug already taken",
+      });
+    }
+
+    // Validate supplied links
+    if (
+      !links ||
+      typeof links !== "object" ||
+      Array.isArray(links)
+    ) {
+      return res.status(400).json({
+        error: "Invalid streaming links",
+      });
+    }
+
+    for (const [platform, url] of Object.entries(links)) {
+      if (
+        typeof url !== "string" ||
+        !/^https?:\/\/\S+$/i.test(url.trim())
+      ) {
+        return res.status(400).json({
+          error: `Invalid URL for ${platform}`,
+        });
+      }
+    }
+
+    const normalizedExternalId =
+      typeof externalId === "string"
+        ? externalId.trim() || undefined
+        : externalId;
+
+    // Prevent duplicate UPCs, excluding this smartlink.
+    if (normalizedExternalId) {
+      const existingUpc = await Smartlink.findOne({
+        upc: normalizedExternalId,
+        _id: { $ne: smartlink._id },
+      });
+
+      if (existingUpc) {
+        return res.status(400).json({
+          error: "This UPC is already in use",
+        });
+      }
+    }
+
+    smartlink.slug = normalizedSlug;
+    smartlink.isrc = isrc;
+    smartlink.title = title;
+    smartlink.artistName = artistName;
+    smartlink.coverArt = coverArt;
+    smartlink.links = links;
+    smartlink.upc = normalizedExternalId;
+
+    await smartlink.save();
+
+    await release.updateOne({
+      isrc,
+      upc: normalizedExternalId,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Smartlink updated successfully",
+      smartlinkId: smartlink._id,
+    });
+  } catch (error) {
+    console.error("Smartlink update error:", error);
+
+    if (error.code === 11000) {
+      return res.status(400).json({
+        error: "This slug or UPC is already in use",
+      });
+    }
+
+    if (error.name === "ValidationError") {
+      return res.status(400).json({
+        error: "Some of the provided information is invalid",
+      });
+    }
+
+    return res.status(500).json({
+      error: "Something went wrong while updating the smartlink",
+    });
+  }
+});
+
+
+router.get("/:id", protect, async (req, res) => {
+  try {
+    const smartlink = await Smartlink.findById(req.params.id);
+
+    if (!smartlink) {
+      return res.status(404).json({
+        error: "Smartlink not found",
+      });
+    }
+
+    const release = await Release.findById(smartlink.releaseId);
+
+    if (!release) {
+      return res.status(404).json({
+        error: "Release not found",
+      });
+    }
+
+    const isOwner =
+      release.releaseOwner.toString() === req.user.id;
+    const isAdmin = req.user.role === "admin";
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({
+        error: "Unauthorized",
+      });
+    }
+
+    return res.status(200).json(smartlink);
+  } catch (error) {
+    console.error("Smartlink fetch error:", error);
+    return res.status(500).json({
+      error: "Failed to load smartlink",
+    });
+  }
+});
+
+
 router.get("/:slug", async (req, res) => {
   try {
     const { slug } = req.params;
@@ -409,5 +596,7 @@ router.get("/:slug", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch smartlink" });
   }
 });
+
+
 
 export default router;

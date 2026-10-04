@@ -139,6 +139,8 @@ const Reporting = () => {
     return titleMatch || artistMatch || labelMatch;
   });
 
+
+
   // --- 4. HANDLERS ---
   const handleSelectRelease = (release) => {
     setSelectedReleaseId(release._id);

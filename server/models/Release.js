@@ -69,6 +69,16 @@ const trackSchema = new mongoose.Schema(
     isrc: { type: String, trim: true },
     explicit: { type: Boolean, default: false },
     trackNumber: { type: Number, required: isNotDraft },
+    sourceReleaseId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Release",
+      default: null,
+    },
+
+    sourceTrackId: {
+      type: mongoose.Schema.Types.ObjectId,
+      default: null,
+    },
 
     primaryArtists: [trackArtistSchema],
     featuredArtists: [trackArtistSchema],

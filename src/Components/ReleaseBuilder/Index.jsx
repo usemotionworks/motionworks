@@ -31,6 +31,7 @@ const ReleaseBuilder = () => {
   const [legalName, setLegalName] = useState("");
   const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
 
+
   const [releaseData, setReleaseData] = useState({
     releaseType: "Single",
     title: "",

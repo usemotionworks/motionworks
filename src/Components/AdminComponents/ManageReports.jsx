@@ -37,7 +37,7 @@ const ManageReports = () => {
     try {
       setLoading(true);
       const { data } = await axios.get("/api/reports");
-      console.log(data);
+
 
       // Safety check: ensure response data is actually an Array
       if (Array.isArray(data)) {

@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 import Release from "../models/Release.js";
 import { notifyAdmin } from "../utils/slack.js";
 import User from "../models/User.js";
+import mongoose from "mongoose";
 
 import dotenv from "dotenv";
 dotenv.config();
@@ -138,62 +139,151 @@ export const createRelease = async (req, res) => {
 
     // 2. FORMAT DATA
 
-    const formattedTracks = Array.isArray(tracks)
-      ? tracks.map((track, idx) => ({
-          ...track,
 
-          trackNumber: track.trackNumber || idx + 1,
+    // 2. FORMAT AND RESOLVE TRACKS
 
-          // Format Primary & Featured Artists (Track Level)
+    if (tracks !== undefined && !Array.isArray(tracks)) {
+      return res.status(400).json({
+        message: "Tracks must be an array.",
+      });
+    }
 
-          primaryArtists: toArtistArray(track.primaryArtists).map((name) => ({
+    const formattedTracks = [];
+
+    for (let idx = 0; idx < (tracks || []).length; idx++) {
+      const track = tracks[idx];
+
+      const {
+        _id,
+        id,
+        createdAt,
+        updatedAt,
+        ...trackData
+      } = track;
+
+      const hasSourceRelease = Boolean(track.sourceReleaseId);
+      const hasSourceTrack = Boolean(track.sourceTrackId);
+
+      // A reused track must have both source IDs.
+      if (hasSourceRelease !== hasSourceTrack) {
+        return res.status(400).json({
+          message: `Invalid source reference for track ${idx + 1}.`,
+        });
+      }
+
+      let originalTrack = null;
+
+      if (hasSourceRelease && hasSourceTrack) {
+        // Validate MongoDB IDs before querying.
+        if (
+          !mongoose.Types.ObjectId.isValid(track.sourceReleaseId) ||
+          !mongoose.Types.ObjectId.isValid(track.sourceTrackId)
+        ) {
+          return res.status(400).json({
+            message: `Invalid source ID for track ${idx + 1}.`,
+          });
+        }
+
+        // Only allow tracks from the artist's own distributed releases.
+        const sourceRelease = await Release.findOne({
+          _id: track.sourceReleaseId,
+          releaseOwner: req.user._id,
+          status: "distributed",
+        }).select("tracks");
+
+        if (!sourceRelease) {
+          return res.status(403).json({
+            message: `You cannot reuse track ${idx + 1} from this release.`,
+          });
+        }
+
+        originalTrack = sourceRelease.tracks.find(
+          (sourceTrack) =>
+            sourceTrack._id.toString() ===
+            track.sourceTrackId.toString()
+        );
+
+        if (!originalTrack) {
+          return res.status(404).json({
+            message: `The original track for track ${idx + 1} was not found.`,
+          });
+        }
+      }
+
+      // Resolve audio and ISRC from the original recording.
+      // For new tracks, retain the uploaded audio details.
+      const fileUrl = originalTrack
+        ? originalTrack.fileUrl
+        : trackData.fileUrl;
+
+      const fileKey = originalTrack
+        ? originalTrack.fileKey
+        : trackData.fileKey;
+
+      const isrc = originalTrack
+        ? originalTrack.isrc
+        : trackData.isrc;
+
+      formattedTracks.push({
+        ...trackData,
+
+        // Never copy a source subdocument's MongoDB _id.
+        trackNumber: trackData.trackNumber || idx + 1,
+
+        fileUrl,
+        fileKey,
+        isrc,
+
+        // Normalize the references.
+        sourceReleaseId: originalTrack
+          ? track.sourceReleaseId
+          : null,
+
+        sourceTrackId: originalTrack
+          ? track.sourceTrackId
+          : null,
+
+        primaryArtists: toArtistArray(trackData.primaryArtists).map(
+          (name) => ({
             name,
-
             user: null,
-          })),
+          })
+        ),
 
-          featuredArtists: toArtistArray(track.featuredArtists).map((name) => ({
+        featuredArtists: toArtistArray(trackData.featuredArtists).map(
+          (name) => ({
             name,
             user: null,
-          })),
+          })
+        ),
 
-          // FIX: Use .roles (plural) to match your frontend state
+        writers: Array.isArray(trackData.writers)
+          ? trackData.writers.map((w) => ({
+              legalName: w.legalName,
+              roles: w.roles || [],
+              user: w.user || null,
+            }))
+          : [],
 
-          writers: Array.isArray(track.writers)
-            ? track.writers.map((w) => ({
-                legalName: w.legalName,
-                roles: w.roles || [], // <--- CHANGED FROM w.role
-                user: w.user || null,
-              }))
-            : [],
+        additionalCredits: Array.isArray(trackData.additionalCredits)
+          ? trackData.additionalCredits.map((c) => ({
+              name: c.name,
+              roles: c.roles || [],
+              user: c.user || null,
+            }))
+          : [],
 
-          // FIX: Use .roles (plural) to match your frontend state
-
-          additionalCredits: Array.isArray(track.additionalCredits)
-            ? track.additionalCredits.map((c) => ({
-                name: c.name,
-
-                roles: c.roles || [], // <--- CHANGED FROM c.role
-
-                user: c.user || null,
-              }))
-            : [],
-
-          splits: Array.isArray(track.splits)
-            ? track.splits.map((s) => ({
-                name: s.name,
-
-                category: s.category,
-
-                creditRole: s.creditRole,
-
-                percentage: s.percentage,
-
-                user: s.user || null,
-              }))
-            : [],
-        }))
-      : [];
+        splits: Array.isArray(trackData.splits)
+          ? trackData.splits.map((s) => ({
+              name: s.name,
+              category: s.category,
+              creditRole: s.creditRole,
+              percentage: s.percentage,
+              user: s.user || null,
+            }))
+          : [],
+      });
+    }
 
     // 3. SECURE IP DETECTION
 
@@ -504,6 +594,53 @@ export const takedownSong = async (req, res) => {
 
     return res.status(500).json({
       message: "Server error while requesting takedown.",
+    });
+  }
+};
+
+
+
+// @desc    Get tracks from the artist's distributed releases
+// @route   GET /api/users/releases/reusable-tracks
+// @access  Private (Artist)
+
+export const getReusableTracks = async (req, res) => {
+  try {
+    const releases = await Release.find({
+      releaseOwner: req.user._id,
+      status: "distributed",
+    })
+      .select("title releaseType tracks createdAt")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const reusableReleases = releases.map((release) => ({
+      releaseId: release._id,
+      releaseTitle: release.title,
+      releaseType: release.releaseType,
+      tracks: release.tracks.map((track) => ({
+        trackId: track._id,
+        title: track.title,
+        lyrics: track.lyrics || "",
+        isrc: track.isrc || "",
+        explicit: track.explicit,
+        primaryArtists: track.primaryArtists || [],
+        featuredArtists: track.featuredArtists || [],
+        writers: track.writers || [],
+        additionalCredits: track.additionalCredits || [],
+        fileUrl: track.fileUrl,
+        fileKey: track.fileKey,
+      })),
+    }));
+
+    return res.status(200).json({
+      releases: reusableReleases,
+    });
+  } catch (error) {
+    console.error("Error fetching reusable tracks:", error);
+
+    return res.status(500).json({
+      message: "Unable to fetch previously released tracks.",
     });
   }
 };

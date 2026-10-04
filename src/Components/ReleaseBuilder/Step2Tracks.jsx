@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, Reorder } from "framer-motion";
 import {
   FaMusic,
@@ -27,6 +27,118 @@ const Step2Tracks = ({
   const [uploadProgress, setUploadProgress] = useState({});
   const [editingTrackIndex, setEditingTrackIndex] = useState(null);
   const [activeTab, setActiveTab] = useState("artists"); // "artists", "writers", "credits", "splits"
+  const [showReusableTracks, setShowReusableTracks] = useState(false);
+  const [reusableReleases, setReusableReleases] = useState([]);
+  const [loadingReusableTracks, setLoadingReusableTracks] = useState(false);
+  const [selectedTracks, setSelectedTracks] = useState([]);
+
+
+  const fetchReusableTracks = async () => {
+    setLoadingReusableTracks(true);
+
+    try {
+      const { data: response } = await axios.get(
+        "/api/releases/reusable-tracks"
+      );
+
+      setReusableReleases(response.releases || []);
+      setShowReusableTracks(true);
+    } catch (error) {
+      console.error("Error fetching reusable tracks:", error);
+      toast.error(
+        error.response?.data?.message ||
+          "Unable to load previously released tracks."
+      );
+    } finally {
+      setLoadingReusableTracks(false);
+    }
+  };
+
+  const toggleTrackSelection = (release, track) => {
+    const selectionKey = `${release.releaseId}-${track.trackId}`;
+
+    setSelectedTracks((prev) => {
+      const exists = prev.some(
+        (item) => item.key === selectionKey
+      );
+
+      if (exists) {
+        return prev.filter((item) => item.key !== selectionKey);
+      }
+
+      return [
+        ...prev,
+        {
+          key: selectionKey,
+          release,
+          track,
+        },
+      ];
+    });
+  };
+
+  const addSelectedTracks = () => {
+    if (selectedTracks.length === 0) {
+      toast.error("Select at least one track.");
+      return;
+    }
+
+    const existingSources = new Set(
+      data.tracks
+        .filter((track) => track.sourceReleaseId && track.sourceTrackId)
+        .map(
+          (track) =>
+            `${track.sourceReleaseId}-${track.sourceTrackId}`
+        )
+    );
+
+    const tracksToAdd = selectedTracks
+      .filter(({ key }) => !existingSources.has(key))
+      .map(({ release, track }, index) => ({
+        id: `reuse-${release.releaseId}-${track.trackId}`,
+        title: track.title,
+        trackNumber: data.tracks.length + index + 1,
+
+        // Reuse the existing audio. Do not upload it again.
+        file: null,
+        fileUrl: track.fileUrl,
+        fileKey: track.fileKey,
+
+        isrc: track.isrc || "",
+        explicit: track.explicit ?? false,
+
+        primaryArtists: track.primaryArtists || [],
+        featuredArtists: track.featuredArtists || [],
+        writers: track.writers || [],
+        additionalCredits: track.additionalCredits || [],
+
+        // References to the original recording.
+        sourceReleaseId: release.releaseId,
+        sourceTrackId: track.trackId,
+
+        // Frontend-only flag.
+        isReused: true,
+      }));
+
+    if (tracksToAdd.length === 0) {
+      toast.error("All selected tracks are already in this release.");
+      return;
+    }
+
+    setData((prev) => ({
+      ...prev,
+      tracks: [...prev.tracks, ...tracksToAdd],
+    }));
+
+    toast.success(
+      `${tracksToAdd.length} previously released ${
+        tracksToAdd.length === 1 ? "track" : "tracks"
+      } added.`
+    );
+
+    setSelectedTracks([]);
+    setShowReusableTracks(false);
+  };
 
   const uploadTrackAudio = async (trackId, file) => {
     try {
@@ -136,10 +248,16 @@ const Step2Tracks = ({
   };
 
   // Remove a track
-  const removeTrack = (trackId) => {
+  // Remove a track using its frontend ID or MongoDB ID
+  const removeTrack = (trackToRemove) => {
     setData((prev) => ({
       ...prev,
-      tracks: prev.tracks.filter((t) => t.id !== trackId),
+      tracks: prev.tracks.filter((track) => {
+        const trackId = track.id ?? track._id;
+        const removedId = trackToRemove.id ?? trackToRemove._id;
+
+        return String(trackId) !== String(removedId);
+      }),
     }));
   };
 
@@ -229,6 +347,150 @@ const Step2Tracks = ({
         </div>
       </section>
 
+
+      {/* PREVIOUSLY RELEASED TRACKS */}
+      <section className={sectionCard}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-serif text-[#EAE4D5]">
+              Previously Released Tracks
+            </h2>
+            <p className="text-xs text-[#B6B09F]/50 mt-2">
+              Add tracks from your own distributed releases without
+              uploading the audio again.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={
+              showReusableTracks
+                ? () => setShowReusableTracks(false)
+                : fetchReusableTracks
+            }
+            disabled={loadingReusableTracks}
+            className="px-6 py-3 border border-[#B6B09F]/20 rounded-full text-[10px] font-bold uppercase tracking-widest text-[#EAE4D5] hover:border-[#EAE4D5] transition-all disabled:opacity-40"
+          >
+            {loadingReusableTracks
+              ? "Loading..."
+              : showReusableTracks
+                ? "Close Library"
+                : "Browse Previous Tracks"}
+          </button>
+        </div>
+
+        {showReusableTracks && (
+          <div className="mt-6 space-y-6">
+            {reusableReleases.length === 0 ? (
+              <div className="text-center py-12 border border-[#B6B09F]/10 rounded-xl">
+                <FaMusic className="mx-auto text-2xl text-[#B6B09F]/30 mb-3" />
+                <p className="text-sm text-[#B6B09F]/60">
+                  No previously distributed tracks found.
+                </p>
+                <p className="text-xs text-[#B6B09F]/30 mt-2">
+                  Only your distributed releases are available here.
+                </p>
+              </div>
+            ) : (
+              <>
+                {reusableReleases.map((release) => (
+                  <div
+                    key={release.releaseId}
+                    className="border border-[#B6B09F]/10 rounded-xl overflow-hidden"
+                  >
+                    <div className="p-4 bg-[#0a0a0a] border-b border-[#B6B09F]/10">
+                      <h3 className="text-sm font-medium text-[#EAE4D5]">
+                        {release.releaseTitle}
+                      </h3>
+                      <p className="text-[10px] text-[#B6B09F]/50 uppercase tracking-widest mt-1">
+                        {release.releaseType} • {release.tracks.length}{" "}
+                        {release.tracks.length === 1 ? "Track" : "Tracks"}
+                      </p>
+                    </div>
+
+                    <div className="divide-y divide-[#B6B09F]/10">
+                      {release.tracks.map((track) => {
+                        const selectionKey =
+                          `${release.releaseId}-${track.trackId}`;
+
+                        const isSelected = selectedTracks.some(
+                          (item) => item.key === selectionKey
+                        );
+
+                        const alreadyAdded = data.tracks.some(
+                          (item) =>
+                            item.sourceReleaseId?.toString() ===
+                              release.releaseId.toString() &&
+                            item.sourceTrackId?.toString() ===
+                              track.trackId.toString()
+                        );
+
+                        return (
+                          <label
+                            key={selectionKey}
+                            className={`flex items-center gap-4 p-4 transition-colors ${
+                              alreadyAdded
+                                ? "opacity-40 cursor-not-allowed"
+                                : "cursor-pointer hover:bg-white/[0.02]"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              disabled={alreadyAdded}
+                              onChange={() =>
+                                toggleTrackSelection(release, track)
+                              }
+                              className="accent-[#EAE4D5] w-4 h-4"
+                            />
+
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-[#EAE4D5] truncate">
+                                {track.title}
+                              </p>
+                              <p className="text-[10px] text-[#B6B09F]/40 mt-1">
+                                {track.primaryArtists
+                                  ?.map((artist) => artist.name)
+                                  .join(", ") || "No artist listed"}
+                              </p>
+                            </div>
+
+                            {alreadyAdded ? (
+                              <span className="text-[9px] text-green-400 uppercase tracking-widest">
+                                Added
+                              </span>
+                            ) : (
+                              <span className="text-[9px] text-[#B6B09F]/40 uppercase tracking-widest">
+                                Reuse
+                              </span>
+                            )}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+                  <span className="text-xs text-[#B6B09F]/60">
+                    {selectedTracks.length} selected
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={addSelectedTracks}
+                    disabled={selectedTracks.length === 0}
+                    className="w-full sm:w-auto px-8 py-3 bg-[#EAE4D5] text-black text-[10px] font-black uppercase tracking-widest rounded-full hover:bg-white transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    Add Selected Tracks
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </section>
+
       {/* TRACKLIST */}
       <section className={sectionCard}>
         <div className="flex justify-between items-center mb-6 border-b border-[#B6B09F]/10 pb-4">
@@ -255,7 +517,7 @@ const Step2Tracks = ({
           >
             {data.tracks.map((track, index) => (
               <Reorder.Item
-                key={track.id}
+                key={track.id ?? track._id}
                 value={track}
                 className="bg-[#0a0a0a] border border-[#B6B09F]/10 rounded-xl p-4 relative group hover:border-[#B6B09F]/30 transition-all"
               >
@@ -273,10 +535,20 @@ const Step2Tracks = ({
                   {/* Title & Progress */}
                   <div className="flex-1 flex items-center justify-between">
                     <div>
-                      <h3 className="text-[#EAE4D5] text-sm font-medium tracking-wide">
-                        {track.title || "Untitled Track"}
-                      </h3>
-                      {uploadProgress[track.id] < 100 && (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="text-[#EAE4D5] text-sm font-medium tracking-wide">
+                          {track.title || "Untitled Track"}
+                        </h3>
+
+                        {track.isReused && (
+                          <span className="text-[8px] uppercase tracking-widest px-2 py-1 rounded-full border border-green-500/30 text-green-400">
+                            Previously released
+                          </span>
+                        )}
+                      </div>
+                      {!track.isReused &&
+                        uploadProgress[track.id] !== undefined &&
+                        uploadProgress[track.id] < 100 && (
                         <div className="w-32 h-1 bg-[#B6B09F]/10 rounded-full mt-2 overflow-hidden">
                           <div
                             className="h-full bg-[#EAE4D5] transition-all duration-300"
@@ -296,7 +568,7 @@ const Step2Tracks = ({
                       </button>
 
                       <button
-                        onClick={() => removeTrack(track.id)}
+                        onClick={() => removeTrack(track)}
                         className="p-2 text-red-500/20 hover:text-red-500 transition-colors"
                       >
                         <FaTrash size={12} />

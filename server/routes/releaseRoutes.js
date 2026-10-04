@@ -6,7 +6,8 @@ import {
   getUserReleases,
   uploadArtwork,
   getReleaseById,
-  takedownSong
+  takedownSong,
+  getReusableTracks,
 } from "../controllers/releaseController.js";
 import { protect } from "../middleware/authMiddleware.js";
 
@@ -38,6 +39,8 @@ router.post(
 // GET  /api/users/releases - View dashboard releases
 router.route("/").post(protect, createRelease).get(protect, getUserReleases);
 
+// GET /api/users/releases/reusable-tracks - View reusable tracks
+router.get("/reusable-tracks", protect, getReusableTracks);
 
 
 // GET /api/users/releases/:id - View release details

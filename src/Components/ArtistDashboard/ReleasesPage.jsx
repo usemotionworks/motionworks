@@ -8,7 +8,8 @@ import {
   FaPlay,
   FaDollarSign,
   FaLayerGroup,
-  FaCalendarAlt
+  FaCalendarAlt,
+  FaEdit,
 } from "react-icons/fa";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "../../lib/axios";
@@ -84,7 +85,6 @@ const ReleasesPage = () => {
         )
       );
 
-      console.log(data.message);
       setTakedownRelease(null);
     } catch (error) {
       console.error("Failed to request takedown:", error);
@@ -112,6 +112,7 @@ const ReleasesPage = () => {
       setFetchingReportDetails(false);
     }
   };
+
 
   return (
     <div>
@@ -170,6 +171,11 @@ const ReleasesPage = () => {
                 release.smartlink ||
                 release.smartlinkId ||
                 release.hasSmartlink;
+
+              const smartlinkId =
+                typeof release.smartlink === "object"
+                  ? release.smartlink?._id
+                  : release.smartlink;
 
               const canCreateSmartlink =
                 release.status === "distributed" && !hasSmartlink;
@@ -299,6 +305,16 @@ const ReleasesPage = () => {
                         >
                           <FaPlus className="text-[10px]" />
                           Create Smartlink
+                        </Link>
+                      )}
+
+                      {hasSmartlink && smartlinkId && (
+                        <Link
+                          to={`/smartlink/edit/${smartlinkId}`}
+                          className="px-4 py-2 text-xs font-bold border border-[#B6B09F]/30 text-[#EAE4D5] rounded-lg hover:bg-[#B6B09F]/10 transition-all inline-flex items-center gap-2"
+                        >
+                          <FaEdit className="text-[10px]" />
+                          Edit Smartlink
                         </Link>
                       )}
 

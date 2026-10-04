@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import axios from "../lib/axios";
 import toast from "react-hot-toast";
+import { useParams, useNavigate } from "react-router-dom";
+
 
 export default function CreateSmartlink() {
   const [isrc, setIsrc] = useState("");
@@ -10,6 +12,9 @@ export default function CreateSmartlink() {
   const [successMessage, setSuccessMessage] = useState(null);
   const [releases, setReleases] = useState([]);
   const [isLoadingReleases, setIsLoadingReleases] = useState(true);
+  const { id: editSmartlinkId } = useParams();
+  const isEditing = Boolean(editSmartlinkId);
+  const navigate = useNavigate();
 
   const [selectedRelease, setSelectedRelease] = useState(null);
   const [releaseSearch, setReleaseSearch] = useState("");
@@ -27,27 +32,80 @@ export default function CreateSmartlink() {
   const [customSlug, setCustomSlug] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
+
   useEffect(() => {
     const fetchReleases = async () => {
       try {
         const { data } = await axios.get("/api/releases");
 
-        // Only distributed releases
         const distributedReleases = data.filter(
-          (release) => release.status === "distributed",
+          (release) => release.status === "distributed"
         );
 
         setReleases(distributedReleases);
+
+        console.log(editSmartlinkId);
+        const id = editSmartlinkId;
+        if (isEditing) {
+          const { data: smartlink } = await axios.get(
+            `/api/lookup/${id}`
+          );
+
+          const release = distributedReleases.find(
+            (item) => item._id === smartlink.releaseId
+          );
+
+          if (!release) {
+            throw new Error(
+              "The release associated with this smartlink could not be found."
+            );
+          }
+
+          setSelectedRelease(release);
+
+          const savedLinks =
+            smartlink.links instanceof Map
+              ? Object.fromEntries(smartlink.links)
+              : smartlink.links || {};
+
+          const { spotify, ...otherLinks } = savedLinks;
+
+          setPreviewData({
+            isrc: smartlink.isrc || "",
+            title: smartlink.title || "",
+            artist: smartlink.artistName || "",
+            thumbnail: smartlink.coverArt || "",
+            externalId: smartlink.upc || "",
+            spotifyUrl: spotify || "",
+            links: otherLinks,
+          });
+
+          setManualLinks({
+            appleMusic: otherLinks.appleMusic || "",
+            itunes: otherLinks.itunes || "",
+            tidal: otherLinks.tidal || "",
+            pandora: otherLinks.pandora || "",
+            amazonMusic: otherLinks.amazonMusic || "",
+            audiomack: otherLinks.audiomack || "",
+            soundcloud: otherLinks.soundcloud || "",
+          });
+
+          setCustomSlug(smartlink.slug || "");
+        }
       } catch (error) {
-        console.error("Failed to fetch releases", error);
-        toast.error("Failed to load releases");
+        console.error("Failed to load smartlink:", error);
+        toast.error(
+          error.response?.data?.error ||
+            error.message ||
+            "Failed to load smartlink"
+        );
       } finally {
         setIsLoadingReleases(false);
       }
     };
 
     fetchReleases();
-  }, []);
+  }, [isEditing, editSmartlinkId]);
 
   const filteredReleases = useMemo(() => {
     return releases.filter((release) => {
@@ -142,12 +200,25 @@ export default function CreateSmartlink() {
         links: cleanedLinks,
       };
 
-      const response = await axios.post("/api/lookup/create", payload);
+      const response = isEditing
+        ? await axios.patch(
+            `/api/lookup/edit/${editSmartlinkId}`,
+            payload
+          )
+        : await axios.post("/api/lookup/create", payload);
 
-      toast.success("Smartlink deployed successfully");
+      toast.success(
+        isEditing
+          ? "Smartlink updated successfully"
+          : "Smartlink deployed successfully"
+      );
 
       setPreviewData(null);
       setIsrc("");
+
+      if (isEditing) {
+        navigate("/dashboard/releases");
+      }
     } catch (err) {
       toast.error(err.response?.data?.error || "Failed to deploy smartlink");
     } finally {
@@ -205,7 +276,7 @@ export default function CreateSmartlink() {
         {/* Title Framing */}
         <header className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight text-[#B6B09F]">
-            Generate Release Smartlink
+            {isEditing ? "Edit Release Smartlink" : "Generate Release Smartlink"}
           </h1>
           <p className="text-sm text-[#B6B09F] mt-1">
             Input a master recording ISRC to pull distributed platform streaming
@@ -486,12 +557,16 @@ export default function CreateSmartlink() {
                 {Object.entries(manualLinks)
                   // 💡 HIDE INPUT IF AUTO-AGGREGATED LINK EXISTS
                   .filter(([platform]) => {
+                    if (isEditing) return true;
+
                     if (platform === "appleMusic") {
                       return !appleLinks.appleMusic && !appleLinks.itunes;
                     }
+
                     if (platform === "itunes") {
                       return !appleLinks.itunes && !appleLinks.appleMusic;
                     }
+
                     return !normalizedLinks[platform];
                   })
                   .map(([platform, value]) => (
@@ -539,12 +614,16 @@ export default function CreateSmartlink() {
             <div className="pt-2">
               <button
                 onClick={handleSaveSmartlink}
-                disabled={isSaving || !customSlug}
-                className="w-full bg-[#050505] border border-[#B6B09F] hover:from-cyan-600 hover:to-blue-600 disabled:from-slate-800 disabled:to-slate-800 text-[#B6B09F] font-bold py-3 px-4 rounded-lg transition-all transform tracking-wide cursor-pointer shadow-lg text-center"
+                disabled={isSaving || !customSlug.trim() || !previewData}
+                className="w-full bg-[#050505] border border-[#B6B09F] hover:from-cyan-600 hover:to-blue-600 disabled:opacity-40 text-[#B6B09F] font-bold py-3 px-4 rounded-lg transition-all tracking-wide cursor-pointer shadow-lg text-center"
               >
                 {isSaving
-                  ? "Deploying to Nodes..."
-                  : "Generate & Deploy Active Smartlink"}
+                  ? isEditing
+                    ? "Saving Changes..."
+                    : "Deploying to Nodes..."
+                  : isEditing
+                    ? "Save Smartlink Changes"
+                    : "Generate & Deploy Active Smartlink"}
               </button>
             </div>
           </main>

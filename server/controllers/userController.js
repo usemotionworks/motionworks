@@ -198,9 +198,6 @@ export const requestSupport = async (req, res) => {
 export const collabToggle = async (req, res) => {
   try {
     // 1. Log to verify middleware is working
-    console.log("User ID from middleware:", req.user?._id);
-    console.log("Status received:", req.body.isAvailableForCollab);
-
     const { isAvailableForCollab } = req.body;
 
     // 2. Check if req.user exists (the 'protect' middleware should handle this, but let's be safe)

@@ -11,6 +11,8 @@ import {
 } from "../utils/emailService.js";
 import AuditLog from "../models/AuditLog.js";
 import Payout from "../models/Payout.js";
+import { completePayout, reversePayout } from "../service/walletService.js";
+
 
 
 import dotenv from "dotenv";
@@ -33,60 +35,85 @@ export const getPendingWithdrawals = async (req, res) => {
 // @desc    Approve or Reject a withdrawal
 // @route   PUT /api/admin/withdrawals/:id
 // @access  Private/Admin
+
+
 export const processWithdrawal = async (req, res) => {
-  const { action, notes } = req.body; // action = 'approve' or 'reject'
+  const { action, notes } = req.body;
   const payoutId = req.params.id;
 
   try {
     const payout = await Payout.findById(payoutId);
 
     if (!payout) {
-      return res.status(404).json({ message: "Payout request not found" });
+      return res.status(404).json({
+        message: "Payout request not found",
+      });
     }
 
     if (payout.status !== "pending") {
-      return res.status(400).json({ message: "This request has already been processed." });
+      return res.status(400).json({
+        message: "This request has already been processed.",
+      });
     }
 
     if (action === "approve") {
-      payout.status = "completed";
-      payout.processedAt = new Date();
-      payout.failureReason = undefined;
-      await payout.save();
+      // Complete the payout and update wallet accounting.
+      await completePayout({
+        userId: payout.user,
+        payoutId: payout._id,
+      });
 
-      AuditLog.create({
+      await AuditLog.create({
         adminId: req.user._id,
         action: `approved payout of ${payout.amountUsd} USD`,
         targetId: payout._id,
         notes: notes || "Processed successfully.",
       });
 
-      return res.status(200).json({ message: "Payout approved and marked completed." });
+      return res.status(200).json({
+        message: "Payout approved and marked completed.",
+      });
     }
 
     if (action === "reject") {
-      // Rejection updates status to 'rejected'.
-      // The wallet summary aggregation will automatically stop counting this amount against available balance.
-      payout.status = "rejected payout";
-      payout.failureReason = notes || "Rejected by admin";
-      payout.processedAt = new Date();
-      await payout.save();
+      // Reverse the reservation and return funds to the wallet.
+      await reversePayout({
+        userId: payout.user,
+        payoutId: payout._id,
+        status: "rejected",
+      });
 
-      AuditLog.create({
+      // Save the admin's rejection reason.
+      await Payout.findByIdAndUpdate(payout._id, {
+        failureReason: notes || "Rejected by admin",
+        processedAt: new Date(),
+      });
+
+      await AuditLog.create({
         adminId: req.user._id,
         action: `rejected payout of ${payout.amountUsd} USD`,
         targetId: payout._id,
-        notes: payout.failureReason,
+        notes: notes || "Rejected by admin",
       });
 
-      return res.status(200).json({ message: "Payout request rejected. Funds released back to user." });
+      return res.status(200).json({
+        message: "Payout rejected. Funds have been returned to the user's wallet.",
+      });
     }
 
-    return res.status(400).json({ message: "Invalid action type" });
+    return res.status(400).json({
+      message: "Invalid action type",
+    });
   } catch (error) {
-    res.status(500).json({ message: "Error processing the withdrawal", error: error.message });
+    console.error("Error processing withdrawal:", error);
+
+    return res.status(500).json({
+      message: "Error processing the withdrawal",
+      error: error.message,
+    });
   }
 };
+
 // @desc    Get all users for the platform
 // @route   GET /api/admin/users
 // @access  Private/Admin
