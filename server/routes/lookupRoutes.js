@@ -416,6 +416,7 @@ router.patch("/edit/:id", protect, async (req, res) => {
 
     const smartlink = await Smartlink.findById(id);
 
+
     if (!smartlink) {
       return res.status(404).json({ error: "Smartlink not found" });
     }
@@ -542,10 +543,29 @@ router.patch("/edit/:id", protect, async (req, res) => {
   }
 });
 
+router.get("/:slug", async (req, res) => {
+  try {
+    const { slug } = req.params;
+
+    const smartlink = await Smartlink.findOne({ slug });
+
+    if (!smartlink) {
+      return res.status(404).json({ error: "Smartlink not found" });
+    }
+
+    res.json(smartlink);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch smartlink" });
+  }
+});
+
+
 
 router.get("/:id", protect, async (req, res) => {
   try {
     const smartlink = await Smartlink.findById(req.params.id);
+
+     console.log(smartlink);
 
     if (!smartlink) {
       return res.status(404).json({
@@ -580,22 +600,6 @@ router.get("/:id", protect, async (req, res) => {
   }
 });
 
-
-router.get("/:slug", async (req, res) => {
-  try {
-    const { slug } = req.params;
-
-    const smartlink = await Smartlink.findOne({ slug });
-
-    if (!smartlink) {
-      return res.status(404).json({ error: "Smartlink not found" });
-    }
-
-    res.json(smartlink);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to fetch smartlink" });
-  }
-});
 
 
 
