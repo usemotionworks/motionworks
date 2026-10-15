@@ -253,7 +253,8 @@ export const processRelease = async (req, res) => {
     });
 
     // --- 📧 Trigger Email Notifications ---
-    const ownerEmail = req.user?.email;
+    const user = await User.findById(release.releaseOwner)
+    const ownerEmail = user?.email;
     const ownerName = release.releaseOwner?.stageName || "Artist";
 
     if (ownerEmail) {
@@ -366,6 +367,7 @@ export const processTakedown = async (req, res) => {
     // --- 📧 Trigger Email Notifications ---
     const ownerEmail = user?.email;
     const ownerName = release.releaseOwner?.stageName || "Artist";
+
 
     if (ownerEmail) {
       try {
