@@ -2,9 +2,18 @@ import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUserStore } from "../store/useUserStore";
 import { FaTimes } from "react-icons/fa";
+import { distributionTerms } from "../legal/distributionTerms";
 
 const LegalModal = ({ isOpen, onClose, onSign, legalName, setLegalName }) => {
   const { user } = useUserStore();
+
+  const [acceptedTerms, setAcceptedTerms] = React.useState(false);
+
+  const legalNameMatches =
+    legalName.trim().toLowerCase() ===
+    user?.legalName?.trim().toLowerCase();
+
+  const canSign = legalNameMatches && acceptedTerms;
 
 
   if (!isOpen) return null;
@@ -36,26 +45,20 @@ const LegalModal = ({ isOpen, onClose, onSign, legalName, setLegalName }) => {
         </p>
 
         {/* SCROLLABLE TERMS */}
-        <div className="flex-1 overflow-y-auto pr-4 mb-6 text-[#B6B09F] text-sm leading-relaxed space-y-4 custom-scrollbar bg-[#050505] p-6 rounded-xl border border-[#B6B09F]/5">
-          <h4 className="text-[#EAE4D5] font-bold">1. Royalty Split</h4>
-          <p>
-            By signing this agreement, you acknowledge that Motion Works will
-            retain 20% of net royalties as defined in your specific tier. 80%
-            will be remitted to your connected wallet.
-          </p>
+        <div className="flex-1 overflow-y-auto pr-4 mb-6 text-[#B6B09F] text-sm leading-relaxed space-y-6 custom-scrollbar bg-[#050505] p-6 rounded-xl border border-[#B6B09F]/5">
+          {distributionTerms.map((section, sectionIndex) => (
+            <section key={`${section.heading}-${sectionIndex}`} className="space-y-3">
+              <h4 className="text-[#EAE4D5] font-bold">
+                {section.heading}
+              </h4>
 
-          <h4 className="text-[#EAE4D5] font-bold">2. Content Ownership</h4>
-          <p>
-            You confirm all works are original and you own 100% of the
-            copyrights or have cleared all necessary licenses for distribution.
-            Samples must be cleared prior to submission.
-          </p>
-
-          <h4 className="text-[#EAE4D5] font-bold">3. Distribution Rights</h4>
-          <p>
-            You grant Motion Works the non-exclusive right to distribute your
-            content to digital service providers (DSPs) globally.
-          </p>
+              {section.paragraphs.map((paragraph, paragraphIndex) => (
+                <p key={paragraphIndex}>
+                  {paragraph}
+                </p>
+              ))}
+            </section>
+          ))}
         </div>
 
         {/* SIGNATURE SECTION */}
@@ -77,11 +80,22 @@ const LegalModal = ({ isOpen, onClose, onSign, legalName, setLegalName }) => {
             className="w-full bg-[#050505] border border-[#B6B09F]/20 rounded-lg px-4 py-4 text-[#EAE4D5] focus:border-[#EAE4D5] outline-none transition-all italic font-serif text-lg"
           />
 
+          <label className="flex items-start gap-3">
+            <input
+              type="checkbox"
+              checked={acceptedTerms}
+              onChange={(e) => setAcceptedTerms(e.target.checked)}
+              className="mt-1"
+            />
+            <span>
+              I have read and agree to the MotionWorks Digital Distribution
+              Terms and Conditions.
+            </span>
+          </label>
+
           <button
             onClick={onSign}
-            disabled={
-              legalName.trim().toLowerCase() !== user?.legalName?.toLowerCase()
-            }
+            disabled={!canSign}
             className="w-full mt-4 bg-[#EAE4D5] text-[#0a0a0a] font-bold py-4 rounded-lg hover:bg-white disabled:opacity-10 transition-all uppercase tracking-widest text-xs"
           >
             I Accept & Bind This Agreement
