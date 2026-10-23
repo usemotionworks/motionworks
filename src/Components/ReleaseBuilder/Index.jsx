@@ -315,7 +315,7 @@ const ReleaseBuilder = () => {
     const success = await saveData(false, finalData);
 
     if (success) {
-      toast.success("Release submitted for review!");
+      toast.success("Release submitted for review! You'll get an email withing 4 - 5 days");
       navigate("/dashboard/releases");
     }
   };
