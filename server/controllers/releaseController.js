@@ -1,21 +1,13 @@
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { v4 as uuidv4 } from "uuid";
 import Release from "../models/Release.js";
 import { notifyAdmin } from "../utils/slack.js";
 import User from "../models/User.js";
 import mongoose from "mongoose";
-
-import dotenv from "dotenv";
-dotenv.config();
-
-export const s3Client = new S3Client({
-  region: process.env.AWS_REGION,
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  },
-});
+import { s3Client } from "../config/s3.js";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { backupReleaseToR2 } from "../utils/backupReleaseToR2.js";
+import { enqueueReleaseBackup } from "../utils/enqueueReleaseBackup.js";
 
 const slugify = (str) =>
   str
@@ -76,6 +68,7 @@ export const createRelease = async (req, res) => {
       releaseTitle,
       releaseType,
       artworkUrl,
+      artworkKey,
       releaseDate,
       preOrderDate,
       timeZone,
@@ -320,6 +313,7 @@ export const createRelease = async (req, res) => {
       title: releaseTitle,
       releaseType,
       artwork: artworkUrl,
+      artworkKey: artworkKey || "",
       releaseDate,
       preOrderDate,
       timeZone,
@@ -345,6 +339,14 @@ export const createRelease = async (req, res) => {
 
       status: isDraft ? "draft" : "pending",
     };
+
+    // A submitted release needs a fresh backup attempt.
+    // Drafts should not trigger a backup.
+    if (!isDraft) {
+      releaseData.backupStatus = "pending";
+      releaseData.backupSyncedAt = null;
+      releaseData.backupError = "";
+    }
 
     if (!isDraft) {
       releaseData.rejectionReason = "";
@@ -435,6 +437,51 @@ export const createRelease = async (req, res) => {
       );
     }
 
+    // Back up submitted releases to Cloudflare R2.
+    // Backup failures must not turn a successful release save into an API error.
+
+    if (!isDraft && savedRelease) {
+      try {
+        await enqueueReleaseBackup(savedRelease);
+
+        savedRelease.backupStatus = "pending";
+        savedRelease.backupSyncedAt = null;
+        savedRelease.backupError = "";
+      } catch (error) {
+        console.error(
+          `Failed to queue backup for ${savedRelease._id}:`,
+          error.message
+        );
+
+        // The release is already saved. Keep it pending so reconciliation
+        // can recover the missing job.
+        savedRelease.backupStatus = "pending";
+        savedRelease.backupSyncedAt = null;
+        savedRelease.backupError =
+          "Backup is awaiting queue recovery.";
+
+        try {
+          await Release.updateOne(
+            { _id: savedRelease._id },
+            {
+              $set: {
+                backupStatus: "pending",
+                backupSyncedAt: null,
+                backupError: savedRelease.backupError,
+              },
+            }
+          );
+        } catch (dbError) {
+          console.error(
+            "Could not update backup status:",
+            dbError.message
+          );
+        }
+      }
+    }
+
+
+
     res.status(releaseId ? 200 : 201).json({
       message: isDraft
         ? "Draft saved successfully!"
@@ -495,7 +542,7 @@ export const uploadArtwork = async (req, res) => {
 
     const fileExt = req.file.originalname.split(".").pop();
     // Organized Path: artist/release-title/artwork/uuid.ext
-    const folderPath = `/music/${slugify(artistName)}/${slugify(releaseTitle || "untitled")}/artwork`;
+    const folderPath = `music/${slugify(artistName)}/${slugify(releaseTitle || "untitled")}/artwork`;
     const fileKey = `${folderPath}/${uuidv4()}.${fileExt}`;
 
     const command = new PutObjectCommand({
@@ -508,7 +555,7 @@ export const uploadArtwork = async (req, res) => {
     await s3Client.send(command);
     const imageUrl = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileKey}`;
 
-    res.status(200).json({ imageUrl });
+    res.status(200).json({ imageUrl, fileKey });
   } catch (error) {
     res
       .status(500)

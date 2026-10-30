@@ -15,8 +15,10 @@ const DashboardOverview = () => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const { data: releaseList } = await axios.get("/api/releases");
-        setReleases(releaseList);
+        const { data: data } = await axios.get("/api/releases");
+        const releaseList = data
+        setReleases(releaseList)
+
 
         // Fetch report totals concurrently for each release to compute overall streams
         const reportPromises = releaseList.map(async (rel) => {
@@ -51,6 +53,7 @@ const DashboardOverview = () => {
       !release.takedownRequest &&
       !release.adminTakenDown
   ).length;
+
 
   const stats = [
     {

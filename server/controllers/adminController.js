@@ -3,7 +3,7 @@ import User from "../models/User.js";
 import Release from "../models/Release.js";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { s3Client } from "./releaseController.js";
+import {s3Client} from "../config/s3.js"
 import {
   sendReleaseApprovalEmail,
   sendReleaseRejectionEmail,

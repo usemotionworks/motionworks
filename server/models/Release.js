@@ -176,6 +176,24 @@ const releaseSchema = new mongoose.Schema(
       default: null,
     },
     isrc: { type: String, trim: true },
+    artworkKey: {
+      type: String,
+      default: "",
+    },
+
+    backupStatus: {
+      type: String,
+      enum: ["pending", "synced", "failed"],
+      default: "pending",
+    },
+    backupSyncedAt: {
+      type: Date,
+      default: null,
+    },
+    backupError: {
+      type: String,
+      default: "",
+    },
   },
   { timestamps: true },
 );

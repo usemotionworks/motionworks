@@ -12,6 +12,7 @@ import rateLimit from "express-rate-limit";
 //Utils
 import { authenticateSpotify } from "./utils/spotify.js";
 import { Smartlink } from "./models/smartlink.js";
+import { startReleaseBackupProcessor } from "./workers/releaseBackupProcessor.js";
 
 //Routes
 import authRoutes from "./routes/authRoutes.js";
@@ -57,6 +58,7 @@ app.use(
   }),
 );
 
+
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
@@ -68,7 +70,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
+  windowMs: 30 * 60 * 1000,
   max: 100,
   message: "Too many requests from this IP, please try again later.",
 });
@@ -98,15 +100,18 @@ app.use("/api/", limiter);
 // Your existing connection code...
 mongoose.connect(process.env.MONGO_URI).then(async () => {
   console.log("MongoDB connected");
-  // --- ADD THIS TEMPORARY FIX ---
+
   try {
     await Smartlink.collection.dropIndex("shortId_1");
-    console.log("✅ Successfully dropped the old broken UPC index!");
+    console.log("Successfully dropped the old broken UPC index!");
   } catch (error) {
-    console.log("ℹ️ Index drop info:", error.message);
+    console.log("Index drop info:", error.message);
   }
-  // ------------------------------
+
+  // Start background backup processing only after MongoDB connects.
+  startReleaseBackupProcessor({ concurrency: 2 });
 });
+
 // --- Basic Route ---
 app.get("/health", (req, res) => {
   res
@@ -131,6 +136,8 @@ app.use(notFound);
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
+
+
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });

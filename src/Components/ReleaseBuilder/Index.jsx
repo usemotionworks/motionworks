@@ -147,7 +147,7 @@ const ReleaseBuilder = () => {
         formData,
       );
 
-      setReleaseData((prev) => ({ ...prev, artwork: data.imageUrl }));
+      setReleaseData((prev) => ({ ...prev, artwork: data.imageUrl, artworkKey: data.fileKey }));
       toast.success("Artwork verified and ready");
     } catch (error) {
       toast.error(error || "Upload failed");
@@ -201,6 +201,7 @@ const ReleaseBuilder = () => {
         isDraft: isDraftStatus,
         releaseTitle: dataToSend.title,
         artworkUrl: dataToSend.artwork,
+        artworkKey: dataToSend.artworkKey,
         legalConsent: {
           agreed: hasSigned,
           signedName: legalName,
