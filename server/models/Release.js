@@ -175,6 +175,11 @@ const releaseSchema = new mongoose.Schema(
       ref: "Smartlink",
       default: null,
     },
+    preSaveCampaign: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "PreSaveCampaign",
+      default: null,
+    },
     isrc: { type: String, trim: true },
     artworkKey: {
       type: String,

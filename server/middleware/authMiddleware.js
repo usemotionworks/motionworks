@@ -3,21 +3,35 @@ import User from "../models/User.js";
 import AuditLog from "../models/AuditLog.js";
 
 export const protect = async (req, res, next) => {
-  let token;
-  token = req.cookies.jwt;
+  const token = req.cookies?.jwt;
 
-  if (token) {
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      req.user = await User.findById(decoded.userId).select("-password");
-      next();
-    } catch (error) {
-      res.status(401).json({ message: "Not authorized, token failed" });
+  if (!token) {
+    return res.status(401).json({
+      message: "Not authorized, no token",
+    });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const user = await User.findById(decoded.userId).select("-password");
+
+    if (!user) {
+      return res.status(401).json({
+        message: "Not authorized, user no longer exists",
+      });
     }
-  } else {
-    res.status(401).json({ message: "Not authorized, no token" });
+
+    req.user = user;
+
+    return next();
+  } catch (error) {
+    return res.status(401).json({
+      message: "Not authorized, token failed",
+    });
   }
 };
+
 
 export const admin = (req, res, next) => {
   if (req.user && req.user.role === "admin") {

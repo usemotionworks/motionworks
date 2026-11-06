@@ -42,6 +42,8 @@ const smartlinkSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+
+
 export const Smartlink = mongoose.model("Smartlink", smartlinkSchema);
 
 // ----------------------------------------------------

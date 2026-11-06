@@ -14,6 +14,10 @@ import { authenticateSpotify } from "./utils/spotify.js";
 import { Smartlink } from "./models/smartlink.js";
 import { startReleaseBackupProcessor } from "./workers/releaseBackupProcessor.js";
 
+
+//Models
+import PreSaveOAuthState from "./models/PreSaveOAuthState.js";
+
 //Routes
 import authRoutes from "./routes/authRoutes.js";
 import royaltyRoutes from "./routes/royaltyRoutes.js";
@@ -26,6 +30,10 @@ import ticketRoutes from "./routes/ticketRoutes.js";
 import lookupRoutes from "./routes/lookupRoutes.js";
 import reportRoutes from "./routes/reportRoutes.js";
 import payoutRoutes from "./routes/payoutRoutes.js";
+import preSaveRoutes from "./routes/preSaveRoutes.js";
+
+// Other routes...
+
 
 
 //Error Middleware
@@ -100,6 +108,7 @@ app.use("/api/", limiter);
 // Your existing connection code...
 mongoose.connect(process.env.MONGO_URI).then(async () => {
   console.log("MongoDB connected");
+  await PreSaveOAuthState.createIndexes();
 
   try {
     await Smartlink.collection.dropIndex("shortId_1");
@@ -130,6 +139,8 @@ app.use("/api/tickets", ticketRoutes);
 app.use("/api/lookup", lookupRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/payouts", payoutRoutes);
+app.use("/api/presaves", preSaveRoutes);
+
 
 
 app.use(notFound);
