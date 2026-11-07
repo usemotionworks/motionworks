@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import crypto from "crypto";
 import PreSaveRecord from "../models/PreSaveRecord.js";
 
 import {
@@ -30,6 +31,16 @@ const getSpotifyConfig = () => {
 
   return { clientId, redirectUri };
 };
+
+
+const getGuestFingerprint = (guestId) => {
+  return crypto
+    .createHash("sha256")
+    .update(guestId || "")
+    .digest("hex")
+    .slice(0, 12);
+};
+
 
 /**
  * GET /api/presaves/spotify/connect
@@ -232,6 +243,13 @@ export const spotifyCallback = async (req, res) => {
 };
 
 const getSpotifyAuthorizationStatus = async (req, res) => {
+
+  console.log("[Spotify status]", {
+    guestFingerprint: getGuestFingerprint(req.guestId),
+    hasGuestId: Boolean(req.guestId),
+  });
+
+
   try {
     const authorization = await PreSaveAuthorization.findOne({
       guestId: req.guestId,
@@ -241,6 +259,11 @@ const getSpotifyAuthorizationStatus = async (req, res) => {
     ).lean();
 
     res.set("Cache-Control", "no-store");
+
+    console.log("[Spotify status result]", {
+      found: Boolean(authorization),
+      status: authorization?.status || null,
+    });
 
     if (!authorization) {
       return res.status(200).json({
@@ -281,6 +304,10 @@ const getSpotifyAuthorizationStatus = async (req, res) => {
 };
 
 const disconnectSpotify = async (req, res) => {
+  console.log("[Spotify disconnect]", {
+    guestFingerprint: getGuestFingerprint(req.guestId),
+    hasGuestId: Boolean(req.guestId),
+  });
   const session = await mongoose.startSession();
 
   try {
@@ -350,6 +377,16 @@ const disconnectSpotify = async (req, res) => {
     });
 
     res.set("Cache-Control", "no-store");
+
+    const updatedAuthorization = await PreSaveAuthorization.findOne({
+      guestId: req.guestId,
+      provider: "spotify",
+    }).select("status");
+
+    console.log("[Spotify disconnect result]", {
+      found: Boolean(updatedAuthorization),
+      status: updatedAuthorization?.status || null,
+    });
 
     return res.status(200).json({
       success: true,
