@@ -50,6 +50,8 @@ const allowedOrigins = [
   "https://usemotionworks.com",
   "https://www.usemotionworks.com",
   "http://localhost:5173",
+  "https://api.usemotionworks.com",
+  "http://api.usemotionworks.com",
   "http://localhost:5174", // for local dev
 ];
 
