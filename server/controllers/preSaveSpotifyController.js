@@ -1,3 +1,6 @@
+import mongoose from "mongoose";
+import PreSaveRecord from "../models/PreSaveRecord.js";
+
 import {
   createOAuthState,
   consumeOAuthState,
@@ -226,4 +229,152 @@ export const spotifyCallback = async (req, res) => {
       message: "Unable to complete Spotify authorization.",
     });
   }
+};
+
+const getSpotifyAuthorizationStatus = async (req, res) => {
+  try {
+    const authorization = await PreSaveAuthorization.findOne({
+      guestId: req.guestId,
+      provider: "spotify",
+    }).select(
+      "status authorizedAt lastUsedAt lastRefreshedAt scopes"
+    ).lean();
+
+    res.set("Cache-Control", "no-store");
+
+    if (!authorization) {
+      return res.status(200).json({
+        success: true,
+        connected: false,
+        status: "not_connected",
+        needsReauthorization: false,
+      });
+    }
+
+    const needsReauthorization = [
+      "revoked",
+      "reauthorization_required",
+      "failed",
+    ].includes(authorization.status);
+
+    return res.status(200).json({
+      success: true,
+      connected: authorization.status === "active",
+      status: authorization.status,
+      needsReauthorization,
+      authorizedAt: authorization.authorizedAt,
+      lastUsedAt: authorization.lastUsedAt,
+      lastRefreshedAt: authorization.lastRefreshedAt,
+      scopes: authorization.scopes,
+    });
+  } catch (error) {
+    console.error(
+      "Spotify authorization status error:",
+      error.message
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to retrieve Spotify connection status.",
+    });
+  }
+};
+
+const disconnectSpotify = async (req, res) => {
+  const session = await mongoose.startSession();
+
+  try {
+    const now = new Date();
+    let cancelledRecords = 0;
+    let wasConnected = false;
+
+    await session.withTransaction(async () => {
+      const authorization = await PreSaveAuthorization.findOne({
+        guestId: req.guestId,
+        provider: "spotify",
+      }).session(session);
+
+      // Make disconnect idempotent: calling it repeatedly is safe.
+      if (!authorization) {
+        return;
+      }
+
+      wasConnected = authorization.status !== "revoked";
+
+      const encryptionContext =
+        `presave:spotify:${req.guestId}`;
+
+      // The schema requires accessTokenEncrypted.
+      // Replace the real token with an encrypted non-token marker.
+      const revokedTokenMarker = encryptPreSaveToken(
+        "REVOKED",
+        encryptionContext
+      );
+
+      await PreSaveAuthorization.updateOne(
+        { _id: authorization._id },
+        {
+          $set: {
+            accessTokenEncrypted: revokedTokenMarker,
+            refreshTokenEncrypted: null,
+            status: "revoked",
+            revokedAt: now,
+          },
+        },
+        { session }
+      );
+
+      const cancellationResult =
+        await PreSaveRecord.updateMany(
+          {
+            authorizationId: authorization._id,
+            status: {
+              $in: ["pending", "processing"],
+            },
+          },
+          {
+            $set: {
+              status: "cancelled",
+              processedAt: now,
+              nextAttemptAt: null,
+              failureCode: "authorization_revoked",
+              failureMessage:
+                "The guest disconnected Spotify.",
+            },
+          },
+          { session }
+        );
+
+      cancelledRecords =
+        cancellationResult.modifiedCount ?? 0;
+    });
+
+    res.set("Cache-Control", "no-store");
+
+    return res.status(200).json({
+      success: true,
+      disconnected: true,
+      provider: "spotify",
+      wasConnected,
+      cancelledRecords,
+      message: "Spotify has been disconnected.",
+    });
+  } catch (error) {
+    console.error(
+      "Spotify disconnect error:",
+      error.message
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to disconnect Spotify.",
+    });
+  } finally {
+    await session.endSession();
+  }
+};
+
+export {
+  getSpotifyAuthorizationStatus,
+  disconnectSpotify,
 };

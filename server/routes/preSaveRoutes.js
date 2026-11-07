@@ -1,6 +1,11 @@
 import express from "express";
 
 import {
+  getSpotifyAuthorizationStatus,
+  disconnectSpotify,
+} from "../controllers/preSaveSpotifyController.js";
+
+import {
   createArtistCampaign,
   createAdminCampaign,
   getArtistCampaigns,
@@ -47,6 +52,18 @@ router.get(
   "/spotify/callback",
   ensurePreSaveGuestSession,
   spotifyCallback
+);
+
+router.get(
+  "/spotify/status",
+  ensurePreSaveGuestSession,
+  getSpotifyAuthorizationStatus
+);
+
+router.delete(
+  "/spotify/disconnect",
+  ensurePreSaveGuestSession,
+  disconnectSpotify
 );
 
 router.post("/artist", protect, createArtistCampaign);
