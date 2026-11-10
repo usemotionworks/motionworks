@@ -565,7 +565,6 @@ router.get("/:id", protect, async (req, res) => {
   try {
     const smartlink = await Smartlink.findById(req.params.id);
 
-     console.log(smartlink);
 
     if (!smartlink) {
       return res.status(404).json({

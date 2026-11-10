@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FaSearch, FaInfoCircle } from "react-icons/fa";
 
 // Components
+import DistributionDetailsModal from "../../Components/AdminComponents/DistributionDetailsModal";
 import RejectionModal from "../../Components/AdminComponents/RejectionModal";
 import ReleaseDetailModal from "../../Components/AdminComponents/ReleaseDetailModal";
 
@@ -18,6 +19,8 @@ const ReleaseApprovalQueue = () => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isRejectOpen, setIsRejectOpen] = useState(false);
   const [selectedRelease, setSelectedRelease] = useState(null);
+  const [isDistributionOpen, setIsDistributionOpen] = useState(false);
+  const [isDistributing, setIsDistributing] = useState(false);
 
   // --- 2. DATA FETCHING ---
   const fetchReleases = async () => {
@@ -36,13 +39,39 @@ const ReleaseApprovalQueue = () => {
   }, []);
 
   // --- 3. ACTION HANDLERS ---
-  const handleApprove = async (id) => {
+  const handleApprove = (release) => {
+    setSelectedRelease(release);
+    setIsDistributionOpen(true);
+  };
+
+  const confirmDistribution = async (distributionDetails) => {
+    if (!selectedRelease) return;
+
+    setIsDistributing(true);
+
     try {
-      await axios.put(`/api/admin/releases/${id}`, { status: "distributed" });
-      toast.success("Release approved!");
-      setReleases((prev) => prev.filter((r) => r._id !== id));
+      await axios.put(
+        `/api/admin/releases/${selectedRelease._id}`,
+        {
+          status: "distributed",
+          ...distributionDetails,
+        }
+      );
+
+      toast.success("Release successfully marked as distributed.");
+
+      setReleases((prev) =>
+        prev.filter((r) => r._id !== selectedRelease._id)
+      );
+
+      setIsDistributionOpen(false);
+      setSelectedRelease(null);
     } catch (error) {
-      toast.error("Failed to approve release.");
+      toast.error(
+        error.response?.data?.message || "Failed to process distribution."
+      );
+    } finally {
+      setIsDistributing(false);
     }
   };
 
@@ -125,6 +154,18 @@ const ReleaseApprovalQueue = () => {
         releaseTitle={selectedRelease?.title}
       />
 
+      <DistributionDetailsModal
+        isOpen={isDistributionOpen}
+        onClose={() => {
+          if (!isDistributing) {
+            setIsDistributionOpen(false);
+          }
+        }}
+        onConfirm={confirmDistribution}
+        release={selectedRelease}
+        loading={isDistributing}
+      />
+
       {/* GRID LIST */}
       {filteredReleases.length === 0 ? (
         <div className="py-20 text-center border border-dashed border-[#B6B09F]/10 rounded-2xl">
@@ -183,7 +224,7 @@ const ReleaseApprovalQueue = () => {
                 {/* Actions */}
                 <div className="mt-6 pt-5 border-t border-[#B6B09F]/5 flex gap-3">
                   <button
-                    onClick={() => handleApprove(release._id)}
+                    onClick={() => handleApprove(release)}
                     className="flex-grow py-2.5 bg-[#EAE4D5] text-black text-[11px] font-black uppercase tracking-widest rounded-lg hover:bg-[#fffcf5] transition-colors"
                   >
                     Approve & Distribute

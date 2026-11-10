@@ -130,9 +130,14 @@ export const replyToTicket = async (req, res) => {
     // If Admin replies, set status to 'in-progress'
     if (req.user.role === "admin") {
       ticket.status = "in-progress";
+    } else {
+      notifyAdminNewTicket(
+        `Ticket Update: ${req.user.email},  Message: ${message}`,
+      );
     }
-
     await ticket.save();
+
+
 
     // Notify the user if the admin replied
     if (req.user.role === "admin") {
@@ -142,6 +147,9 @@ export const replyToTicket = async (req, res) => {
         ticket._id,
       );
     }
+
+
+
 
     res.status(200).json(ticket);
   } catch (error) {

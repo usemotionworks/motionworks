@@ -44,7 +44,6 @@ export default function CreateSmartlink() {
 
         setReleases(distributedReleases);
 
-        console.log(editSmartlinkId);
         const id = editSmartlinkId;
         if (isEditing) {
           const { data: smartlink } = await axios.get(

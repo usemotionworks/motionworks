@@ -7,6 +7,7 @@ const AdminTickets = () => {
 
   useEffect(() => {
     axios.get("/api/tickets/admin").then(({ data }) => setTickets(data));
+
   }, []);
 
   return (

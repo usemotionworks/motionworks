@@ -10,7 +10,8 @@ import {
   getAuditLogs,
   getDistributedReleases,
   processTakedown,
-  getPendingTakedowns
+  getPendingTakedowns,
+  discoverSpotifyRelease,
 } from "../controllers/adminController.js";
 import { protect, admin } from "../middleware/authMiddleware.js";
 
@@ -35,5 +36,12 @@ router.put("/releases/:id", protect, admin, processRelease);
 router.put("/releases/:id/takedown", protect, admin, processTakedown);
 
 router.get("/audit-logs", protect, admin, getAuditLogs);
+
+router.post(
+  "/distributed-releases/:id/spotify/discover",
+  protect,
+  admin,
+  discoverSpotifyRelease
+);
 
 export default router;

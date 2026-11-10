@@ -35,6 +35,8 @@ const TicketThread = ({ isAdminView = false }) => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [ticket?.messages]);
 
+
+
   const handleSend = async (e) => {
     e.preventDefault();
     if (!message.trim()) return;
@@ -143,7 +145,9 @@ const TicketThread = ({ isAdminView = false }) => {
         <div className="flex items-center gap-4">
           <h2 className="text-xl font-serif text-[#EAE4D5]">
             {ticket.subject}
+
           </h2>
+
           <span
             className={`text-[10px] uppercase font-bold px-2 py-1 rounded ${
               ticket.status === "resolved"
@@ -164,7 +168,9 @@ const TicketThread = ({ isAdminView = false }) => {
               <FaCheckCircle /> Mark Resolved
             </button>
           )}
+
       </div>
+
 
       {/* CHAT AREA */}
       <div className="flex-grow overflow-y-auto space-y-4 pr-4 custom-scrollbar">
@@ -173,6 +179,7 @@ const TicketThread = ({ isAdminView = false }) => {
           <div className="bg-[#111] border border-[#B6B09F]/10 p-5 rounded-2xl max-w-[85%] text-sm">
             <p className="text-[#B6B09F]/60 text-[10px] uppercase tracking-widest mb-2">
               Inquiry Detail
+              ({ticket.user.stageName}) - UserId: {ticket.user._id})
             </p>
             <p className="text-[#EAE4D5] leading-relaxed">
               {ticket.description}
@@ -201,7 +208,6 @@ const TicketThread = ({ isAdminView = false }) => {
                 }`}
               >
                 <p>{msg.message}</p>
-                {/* ... rest of your code */}
               </div>
             </div>
           );
