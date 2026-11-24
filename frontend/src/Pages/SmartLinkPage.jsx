@@ -13,7 +13,7 @@ export default function SmartlinkPage() {
   useEffect(() => {
     const fetchSmartlink = async () => {
       try {
-        const res = await axios.get(`/api/lookup/${slug}`);
+        const res = await axios.get(`/api/lookup/${encodeURIComponent(slug)}`);
         setData(res.data);
       } catch (err) {
         console.error(err);

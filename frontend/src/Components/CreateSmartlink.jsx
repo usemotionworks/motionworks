@@ -47,7 +47,7 @@ export default function CreateSmartlink() {
         const id = editSmartlinkId;
         if (isEditing) {
           const { data: smartlink } = await axios.get(
-            `/api/lookup/${id}`
+            `/api/lookup/by-id/${id}`
           );
 
           const release = distributedReleases.find(

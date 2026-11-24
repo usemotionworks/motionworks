@@ -547,7 +547,8 @@ router.get("/:slug", async (req, res) => {
   try {
     const { slug } = req.params;
 
-    const smartlink = await Smartlink.findOne({ slug });
+    const normalizedSlug = req.params.slug.trim().toLowerCase();
+    const smartlink = await Smartlink.findOne({ slug: normalizedSlug });
 
     if (!smartlink) {
       return res.status(404).json({ error: "Smartlink not found" });
@@ -560,8 +561,7 @@ router.get("/:slug", async (req, res) => {
 });
 
 
-
-router.get("/:id", protect, async (req, res) => {
+router.get("/by-id/:id", protect, async (req, res) => {
   try {
     const smartlink = await Smartlink.findById(req.params.id);
 
