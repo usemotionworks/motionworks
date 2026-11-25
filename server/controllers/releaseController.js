@@ -520,15 +520,27 @@ export const createRelease = async (req, res) => {
 
 export const getUserReleases = async (req, res) => {
   try {
-    // Find by releaseOwner (the ID of the person who created the draft/submission)
-    const releases = await Release.find({ releaseOwner: req.user._id })
+    const isAdmin = req.user.role === "admin";
+
+    // Admins can access all distributed releases.
+    // Artists can only access their own distributed releases.
+    const query = isAdmin
+      ? { status: "distributed" }
+      : {
+          releaseOwner: req.user._id,
+          status: "distributed",
+        };
+
+    const releases = await Release.find(query)
       .populate("releaseOwner", "stageName")
       .sort({ createdAt: -1 });
 
     res.status(200).json(releases);
   } catch (error) {
     console.error("Error fetching releases:", error);
-    res.status(500).json({ message: "Server error while fetching releases." });
+    res.status(500).json({
+      message: "Server error while fetching releases.",
+    });
   }
 };
 

@@ -5,6 +5,7 @@ import { FaSearch, FaPlus, FaChartLine } from "react-icons/fa";
 
 function ReleaseCard({ release, navigate }) {
   const hasSmartlink = !!release.smartlink;
+  const id = release.smartlink
 
   return (
     <div className="flex items-center justify-between p-4 border border-[#B6B09F]/10 rounded-lg hover:border-[#B6B09F]/40 transition">
@@ -50,12 +51,22 @@ function ReleaseCard({ release, navigate }) {
             <FaPlus /> Create
           </button>
         ) : (
+            <>
           <button
             onClick={() => navigate(`/smartlink/analytics`)}
             className="flex items-center gap-2 px-3 py-2 border border-[#B6B09F]/30 text-[#EAE4D5] rounded-lg text-sm"
           >
             <FaChartLine /> Analytics
-          </button>
+              </button>
+              <button
+                onClick={() => navigate(`/smartlink/edit/${id}`)}
+                className="flex items-center gap-2 px-3 py-2 border border-[#B6B09F]/30 text-[#EAE4D5] rounded-lg text-sm"
+              >
+                <FaChartLine /> Edit
+                  </button>
+
+</>
+
         )}
       </div>
     </div>

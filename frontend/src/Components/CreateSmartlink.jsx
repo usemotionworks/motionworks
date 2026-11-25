@@ -38,11 +38,7 @@ export default function CreateSmartlink() {
       try {
         const { data } = await axios.get("/api/releases");
 
-        const distributedReleases = data.filter(
-          (release) => release.status === "distributed"
-        );
-
-        setReleases(distributedReleases);
+        setReleases(data);
 
         const id = editSmartlinkId;
         if (isEditing) {
@@ -50,8 +46,14 @@ export default function CreateSmartlink() {
             `/api/lookup/by-id/${id}`
           );
 
-          const release = distributedReleases.find(
-            (item) => item._id === smartlink.releaseId
+
+          const releaseId =
+            typeof smartlink.releaseId === "object"
+              ? smartlink.releaseId._id
+              : smartlink.releaseId;
+
+          const release = data.find(
+            (item) => item._id.toString() === releaseId.toString()
           );
 
           if (!release) {
@@ -367,7 +369,7 @@ export default function CreateSmartlink() {
           >
             <div className="flex-1 w-full">
               <label className="block text-xs font-black uppercase tracking-[0.3em] text-[#B6B09F] mb-2">
-                Please paste Spotify Track or Album URL of the Release Below
+                Please paste Spotify Track or Album URL
               </label>
 
               <input

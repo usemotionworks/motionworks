@@ -9,6 +9,17 @@ export default function SmartlinkPage() {
   const { slug } = useParams();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Could not copy smartlink URL", err);
+    }
+  };
 
   useEffect(() => {
     const fetchSmartlink = async () => {
@@ -72,6 +83,13 @@ export default function SmartlinkPage() {
           <p className="text-xs uppercase tracking-[0.3em] text-[#B6B09F]/60">
             Official Smartlink
           </p>
+          <button
+            type="button"
+            onClick={handleCopyUrl}
+            className="px-4 py-2 border border-[#B6B09F]/20 rounded-lg text-xs uppercase tracking-[0.2em] text-[#EAE4D5] hover:border-[#B6B09F]/50 hover:bg-[#080808] transition-all"
+          >
+            {copied ? "Link copied" : "Copy smartlink URL"}
+          </button>
         </div>
 
         {/* Cover */}

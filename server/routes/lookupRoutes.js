@@ -563,6 +563,7 @@ router.get("/:slug", async (req, res) => {
 
 router.get("/by-id/:id", protect, async (req, res) => {
   try {
+
     const smartlink = await Smartlink.findById(req.params.id);
 
 
@@ -573,6 +574,7 @@ router.get("/by-id/:id", protect, async (req, res) => {
     }
 
     const release = await Release.findById(smartlink.releaseId);
+
 
     if (!release) {
       return res.status(404).json({
