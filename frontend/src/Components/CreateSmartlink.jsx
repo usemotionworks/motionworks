@@ -367,7 +367,7 @@ export default function CreateSmartlink() {
           >
             <div className="flex-1 w-full">
               <label className="block text-xs font-black uppercase tracking-[0.3em] text-[#B6B09F] mb-2">
-                Spotify Track or Album URL
+                Please paste Spotify Track or Album URL of the Release Below
               </label>
 
               <input
